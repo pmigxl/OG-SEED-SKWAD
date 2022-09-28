@@ -7,7 +7,7 @@
 #define volt_pin 9
 int sampling_rate = 8;
 int motor_volt = 0;
-int time = 0;
+int timer = 0;
 unsigned long timer = 0;
 
 
