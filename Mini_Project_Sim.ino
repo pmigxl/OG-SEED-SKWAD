@@ -1,3 +1,9 @@
+/*Things to ask for Wednesday:
+*which positive value will it change to at 1 second?
+*note, open the motor encoder file used on previous lab
+*64 counts per revolution, how does this work to convert to radians per sec?
+
+*/
 #define volt_pin 9
 int sampling_rate = 8;
 int motor_volt = 0;
