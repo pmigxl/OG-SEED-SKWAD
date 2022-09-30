@@ -1,40 +1,49 @@
-/*Things to ask for Wednesday:
-*which positive value will it change to at 1 second?
-*note, open the motor encoder file used on previous lab
-*64 counts per revolution, how does this work to convert to radians per sec?
-
-*/
-#define volt_pin 9
-int sampling_rate = 8;
-int motor_volt = 0;
-int timer = 0;
+//CPR should be CPR = 64
+//Equation to convert to rad/sec: angle = C/CPR * 2pi
+//Set the CLK to pin 2 and the DT pin to pin 3, GND --> GND
+#include <Encoder.h>
+int sample_rate = 1600;
+float CPR = 20;
 unsigned long timer = 0;
-
-
+int encodeCount;
+float degree;
+float rad;
+float ang_vel;
+Encoder myEnc(2, 3);
 void setup() {
-  //set pins 4,7,8,9, and 10 to output
-  pinMode(4,OUTPUT);
-  pinMode(7,OUTPUT);
-  pinMode(8,OUTPUT);
-  pinMode(9,OUTPUT);
-  pinMode(10,OUTPUT);
-  //set the baud rate
-  Serial.begin(250000);
+  timer = 0;
+  Serial.begin(19200);
 }
 
 void loop() {
-  //Set Time1 to be millis elapsed
+  //used to measure the time in increments and display to the serial monitor
   timer = millis();
-  while(millis() < (timer + sampling_rate)){
-    //delay for 1 sec and set to desired positive value
-    delay(1000);
-    motor_volt = analogWrite(volt_pin);
-    motor_volt = motor_volt + 1;
-  }
-  //print out the current time, motor voltage command, and angular velocity
-  if((timer >= 1000)&&(timer <= 2000)){
-  Serial.print(Time1);
-  Serial.print(motor_volt);
+  while(millis() < timer + sample_rate){
+    if((timer >= 1000)&&(timer <= 5000)){
+      encodeCount = (myEnc.read())/4;
+      
+      Serial.println("encoder value: ");
+      Serial.print(encodeCount);
+      Serial.println("");
+      degree = (encodeCount/CPR)*360;
+      Serial.println("Angle in degrees: ");
+      Serial.print(degree);
+      Serial.println("");
+      rad = (encodeCount/CPR)*(2*3.14159);
+      Serial.print("Angle in radians: ");
+      Serial.print(rad);
+      Serial.println("");
+      Serial.println("Time: ");
+      Serial.print(millis());
+      Serial.print(" milli-sec");
+      Serial.println("");
+      ang_vel = rad/(millis()/1000);
+      Serial.println("Angular velocity");
+      Serial.print(ang_vel);
+      Serial.println("");
+      Serial.println("");
+    }
+    
   }
   
 }
