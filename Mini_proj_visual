@@ -83,10 +83,10 @@ while True:
                 print(output)
                 
             elif (realworld_tvec[0] > 1 and realworld_tvec[1] < 1):
-                output = pi
+                output = ((3*pi)/2)
                 print(output)
             elif (realworld_tvec[0] > 1 and realworld_tvec[1] > 1):
-                output = ((3*pi)/2)
+                output = pi
                 print(output)
                 
             cv2.putText(frame, tvec_str, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
