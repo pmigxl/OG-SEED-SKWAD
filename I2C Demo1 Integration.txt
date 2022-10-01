@@ -109,10 +109,10 @@ while True:
                 print(output)
                 
             elif (realworld_tvec[0] > 1 and realworld_tvec[1] < 1):
-                output = pi
+                output = ((3*pi)/2)
                 print(output)
             elif (realworld_tvec[0] > 1 and realworld_tvec[1] > 1):
-                output = ((3*pi)/2)
+                output = pi
                 print(output)
                 
             cv2.putText(frame, tvec_str, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
@@ -121,7 +121,7 @@ while True:
 
 
 
-lcd.message = "Move to %dpi/2   " %frame
+lcd.message = "Move to %dpi/2   " %output
 
 
 
@@ -129,7 +129,7 @@ while True:
 	
 	while True:
 	  try:
-	    writeNumber(frame)
+	    writeNumber(output)
 	    break
           except:
 	    print("I2C Error")
@@ -158,7 +158,7 @@ while True:
         lcd.message = "Move to %dpi/2\nNow at %.2fpi/2    " (aruco_dict, currentNum)
         
 
-        lcd.message = "Move to %dpi/2   " %frame
+        lcd.message = "Move to %dpi/2   " %output
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'):
