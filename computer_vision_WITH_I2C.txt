@@ -10,6 +10,10 @@ import board
 import busio
 import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd 
 
+split = [0,0,0,0]
+read = [];
+current_angle = 0;
+
 pi = np.pi
 
 
@@ -139,8 +143,6 @@ while True:
         lcd.message = "Target: " + str(frame) + "\nPosition: " + str(current_angle)
 
 #lcd.message = "Move to %dpi/2   " %output
-
-
 #while True:
 	
 	#while True:
@@ -154,7 +156,6 @@ while True:
             #sleep(2)
             #cv2.VideoCapture(0);
         #sleep(0.1)
-
 
        # while True:
 	  #try: 
