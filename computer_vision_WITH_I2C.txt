@@ -1,9 +1,11 @@
 from cv2 import aruco
-import cv2
+import cv2 as cv
 import numpy as np
 import math
+import time
 from time import sleep
 import smbus
+from smbus2 import SMBus
 import board
 import busio
 import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd 
@@ -13,21 +15,23 @@ pi = np.pi
 
 lcd_columns = 16
 lcd_rows = 2
-i2c = busio.I2C(board.SCL, board.SDA)
-lcd = character_lcd.character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
-lcd.color = [0, 50, 0]
+#i2c = busio.I2C(board.SCL, board.SDA)
+i2c = board.I2C()
+lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 
-bus = smbus.SMBus(1)
+lcd.clear()
+lcd.color = [100, 0, 50]
 
-addr = 0x04
+#bus = smbus.SMBus(1)
+#addr = 0x04
 
-def writeNumber(value):
-	number = bus.write_byte(addr, value)
-	return -1
+#def writeNumber(value):
+	#number = bus.write_byte(addr, value)
+	#return -1
 
-def readNumber():
-	number = bus.read_i2c_block_data(addr, 6)
-	return number
+#def readNumber():
+	#number = bus.read_i2c_block_data(addr, 6)
+	#return number
 
 def isRotationMatrix(R):
     Rt = np.transpose(R)
@@ -118,47 +122,55 @@ while True:
             cv2.putText(frame, tvec_str, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
                 
     cv2.imshow("frame", frame)
+    bus = SMBus(1)
 
 
+    split[0] = frame >> 24
+        split[1] = (frame << 8) >> 24
+        split[2] = (frame << 16) >> 24
+        split[3] = (frame << 24) >> 24
+        try:
+            bus.write_i2c_block_data(4, 0, split) #write the given number to offset 0
+            read = bus.read_i2c_block_data(4, 0, 4)
+            current_angle = (read[0] << 24) | (read[1] << 16) | (read[2] << 8) | read[3]
+        except IOError:
+            print("Failed to connect to I2C bus. Trying again\n")
+        bus.close()
+        lcd.message = "Target: " + str(frame) + "\nPosition: " + str(current_angle)
 
-lcd.message = "Move to %dpi/2   " %output
+#lcd.message = "Move to %dpi/2   " %output
 
 
-
-while True:
+#while True:
 	
-	while True:
-	  try:
-	    writeNumber(output)
-	    break
-          except:
-	    print("I2C Error")
-            lcd.message = "I2C Error"
-            cap.release() 
-            sleep(2)
-            cv2.VideoCapture(0);
-        sleep(0.1)
+	#while True:
+	  #try:
+	    #writeNumber(output)
+	    #break
+         # except:
+	    #print("I2C Error")
+            #lcd.message = "I2C Error"
+            #cap.release() 
+            #sleep(2)
+            #cv2.VideoCapture(0);
+        #sleep(0.1)
 
 
-        while True:
-	  try: 
-            current = readNumber()
-            break
-          except:
-            print("I2C Error2")
-            lcd.message = "I2C Error"
-            cap.release()
-            sleep(2)
-            cv2.VideoCapture(0)
-
-         
-        currentNum = float(str(current[3]) + str(current[2]) + str(current[1]) + str(current[0]))
-        currentNum = float((currentNum + 40)/800)
-
-        lcd.message = "Move to %dpi/2\nNow at %.2fpi/2    " (aruco_dict, currentNum)
-        
-
-        lcd.message = "Move to %dpi/2   " %output
+       # while True:
+	  #try: 
+           # current = readNumber()
+          #  break
+         # except:
+           # print("I2C Error2")
+           # lcd.message = "I2C Error"
+           # cap.release()
+           # sleep(2)
+           # cv2.VideoCapture(0)
+  
+        #currentNum = float(str(current[3]) + str(current[2]) + str(current[1]) + str(current[0]))
+        #currentNum = float((currentNum + 40)/800)
+        #lcd.message = "Move to %dpi/2\nNow at %.2fpi/2    " (aruco_dict, currentNum)
+        #lcd.message = "Move to %dpi/2   " %output
 
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'):
