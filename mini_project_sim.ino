@@ -11,7 +11,7 @@ float degree;
 float rad;
 float ang_vel;
 int read;
-Encoder myEnc(2, 3);
+Encoder myEnc(5,2);
 void setup() {
   timer = 0;
   Serial.begin(19200);
