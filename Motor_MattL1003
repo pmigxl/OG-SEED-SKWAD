@@ -1,0 +1,165 @@
+#include <DualMC33926MotorShield.h>
+#include <Wire.h>
+#include "Encoder.h"
+
+
+
+// pin definitions for the encoder and the LCD
+#define pwmMod        9 // used to modify the PWM
+#define ENC1          2
+#define ENC2          3
+#define SLAVE_ADDRESS 0x04
+#define TOLERANCE     PI/8 
+#define ONE           0
+#define TWO           100
+#define THREE         200
+#define FOUR          400
+#define counts        800 // counts per revolution 
+
+// variables used for the controller
+double timeChange; // used to keep track of the time elapsed 
+double error = 0; // used to calculate difference in target and current angular position
+double out = 0;
+double voltage = 0;
+double pwmOut = 0;
+float integrator = 0; // used to keep track of the accumulating error 
+
+Encoder encoderValues(ENC1, ENC2); // position of the encoder 
+DualMC33926MotorShield md;
+
+float oldPos; 
+float newPos = 0;
+
+int  currentPosition = 0; // keeps track of our encoder values 
+
+int desiredPos = 3; // keeps track of our quadrants 
+double rad = 0; // calculates the position on the quadrant 
+
+
+// here are the controller variables 
+double Kp = 0.3;
+double Ki = 0.139513658834803;
+
+// from the motor shield example code
+// reads from the pin to see if there is an error 
+
+// initialize our variables and motor object
+void setup() {
+  md.setM1Speed(0);
+  pinMode(ENC1, INPUT);
+  pinMode(ENC2, INPUT);
+  
+  pinMode(4, OUTPUT); // here we set the tri-state
+  digitalWrite(4, HIGH);
+  
+  pinMode(7, OUTPUT); // sets the motor 1 direction to high
+  digitalWrite(7, HIGH);
+  
+  pinMode(pwmMod, OUTPUT); // motor 1 pwm 
+  
+  pinMode(8, OUTPUT); // motor 2 direction 
+  pinMode(10, OUTPUT); // motor 2 pwm
+  
+  pinMode(12, INPUT); // status flag indicator 
+
+  Serial.begin(115200);
+
+  // print statement to the serial monitor 
+  //Serial.println("Mini Project");
+ // Serial.println("Ready");
+
+
+
+  // initialize I2C as the subordinate 
+  Wire.begin(SLAVE_ADDRESS);
+
+  // callbacks for I2C
+  Wire.onRequest(sendData);
+  Wire.onReceive(receiveData);
+  Serial.println("Mini Project");
+  Serial.println("Ready");
+  
+}
+
+// void loop will read the desired position from the camera 
+// and then use speed control in order to designate direction/speed of the motor 
+void loop() {
+  double lastPosition;
+  currentPosition = encoderValues.read()/4;
+
+  if (currentPosition != lastPosition){
+    Serial.println(currentPosition);
+    lastPosition = currentPosition;
+  }
+  
+
+  switch(desiredPos) { // we will use these switch cases to rotate towards the goal in the shortest route
+
+    case 1: // here we are trying to rotate towards 0/2pi
+        
+    if (currentPosition != ONE){   // we have added buffers of PI/8 in orde to add some wiggle room 
+      speedControl(ONE);
+      Serial.println("Motor is stationary");
+    }
+
+    break;
+
+    case 2: // here we are rotating towards pi/2 
+
+    if (currentPosition != 100){
+      speedControl(TWO);
+      Serial.println("Motor is moving pi/2 radians");
+    }
+    break;
+
+    case 3: // here we will rotate towards pi 
+
+    if (currentPosition != 200) {
+      speedControl(THREE);
+      Serial.println("Motor is moving pi radians");
+    }
+    break;
+
+    case 4: // here we will rotate towards 3pi/2
+
+    if (currentPosition != 400){
+      speedControl(FOUR);
+      Serial.println("Motor is moving 3pi/2 radians");
+    }
+    break;
+  }
+} 
+
+
+void speedControl(double target){
+  error = (target - currentPosition); // READ IN THE ERROR VALUE BY SUBTRACTING OUR CURRENT POSITION FROM OUR TARGET 
+  voltage = Kp*error; // WE ACQUIRE OUR VOLTAGE VALUE BY MULTIPLYING OUR Kp CONSTANT 
+  pwmOut = (voltage / 7.8) * 255; // WE SCALE DOWN OUR VOLTAGE VALUE TO THE PWM 255 VALUE 
+  
+  if (pwmOut < 0){ // IF WE ARE AT A VALUE HIGHER THAN -255 WE WILL ROTATE IN THE NEGATIVE DIRECTION AT MAX SPEED 
+    digitalWrite(7, false);
+  }
+  else {
+    digitalWrite(7,true);
+  }
+  pwmOut = abs(pwmOut);
+
+  if(pwmOut > 255) {
+    pwmOut = 255;
+  }
+  analogWrite(pwmMod, pwmOut);
+
+}
+
+
+void receiveData(int byteCount){
+  while(Wire.available()) {
+    desiredPos = Wire.read();
+    Serial.print("Data recieved: ");
+    Serial.println(desiredPos);
+  }
+}
+
+void sendData(){
+  Wire.write(desiredPos);
+}
