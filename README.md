@@ -14,5 +14,5 @@
 
 MiniProject: Contains Arduino and Pi code which rotates a motor based on vision inputs
 
-Misc: Contains iterations of code from MiniProject  |  *not* final working code
+Misc: Contains various iterations of code from MiniProject
 
