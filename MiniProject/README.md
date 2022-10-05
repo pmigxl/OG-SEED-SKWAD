@@ -15,9 +15,9 @@
 
 **Simulation and Control:** *Matt Lange*
 
-- [x] List Things
-- [x] You Did
-- [x] within Simulation and Control
+- [x] Created a program that reads the encoder counts to a varible and outprints the radians and angular velocity
+- [x] Designed a transfer function from the step response of angular velocity and voltage
+- [x] Implemented a PI controller using the transfer function values
 
 **System Integration:** *Brittany Ellington*
 
