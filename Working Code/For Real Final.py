@@ -1,3 +1,10 @@
+# Title: Aruco Quadrant Dection with I2C
+# Authors: Alexis Capitano, Preston Miglaw, Britanny Ellington, and Matt Lange 
+# Team: 10 
+# Date: 10/5/2022
+# Purpose: Detect an Arcuo marker and determine which quadrant of the camera it is in. Communicate this output to an arduino and display on an LCD.
+# To Use: Run this program and put an aruco marker in the field of view of the camera. The corresponding quadrant output will be displayed on the terminal and LCD and the arduino will control the motor accordingly 
+
 
 # Import necessary tools 
 from picamera.array import PiRGBArray
