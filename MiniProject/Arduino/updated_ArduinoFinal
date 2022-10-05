@@ -1,0 +1,131 @@
+#include <DualMC33926MotorShield.h>
+#include <Wire.h>
+
+#define SLAVE_ADDRESS 0x20
+#define PI_ADDRESS 0x2a
+
+DualMC33926MotorShield md;
+
+//Pin A is CLK, Pin B is DT
+const int PIN_A = 2;
+const int PIN_B = 5;
+const int PI_PIN = 3;
+
+//Program uses state machine to track encoder’s position
+bool A_CURRENT_STATE = 0;
+bool B_CURRENT_STATE = 0;
+
+int cnt; //motor encoder counts
+int intError = 0; //integral error for i in PI controller
+int prevTime = 0; //previos time 
+int currTime = 0; //current time
+int prevPos = 0; // stores the previous position of the motor 
+int target = 0;
+double motorVar = 0; //varible to hold the value on the motor
+double currentPos = 0;
+
+const double Ki = 0.01;
+const double Kp = 3.5;
+
+char data[] = "hallo";
+int index = 0;
+
+void setup() {
+  
+  pinMode(PIN_A, INPUT);
+  pinMode(PIN_B, INPUT);
+  pinMode(12,INPUT);
+  pinMode(13, OUTPUT);
+
+  Serial.begin(115200);
+  
+  //Interrupt handler setup
+  attachInterrupt(digitalPinToInterrupt(2), TICK, CHANGE); 
+  md.init(); // motor initialization
+  delay(1000); //motor initialization delay
+
+  Wire.begin(PI_ADDRESS);
+  Wire.onReceive(PI_READ);
+  Wire.onRequest(PI_WRITE);
+
+}
+
+void loop() {
+  
+  currentPos = double(cnt)/4.44;
+  
+  if (currentPos - target <=  5 && currentPos - target >=  -5){ //error management
+    currentPos = target;               
+    intError = 0;                        
+  }
+  
+  currTime = millis(); //get current time
+  if (currTime >= prevTime + 100){ // 10th of a second
+    intError += (currentPos - target);
+    prevPos = currentPos; 
+    prevTime = currTime; 
+    motorVar = double(( target - currentPos )) * Kp + (Ki * double(intError)); //calculate the motor movement
+    md.setM1Speed( -1 * motorVar ); 
+  }
+}
+
+// Interrupt handler encoder
+void PI_READ(int byteCount) { 
+  int data = 0;
+  data = Wire.read(); // receive a byte as char
+    
+  switch(data) {
+    case 0:
+      target = 0;
+      Serial.println(target);
+      break;
+    case 1:
+      target = 90;
+      Serial.println(target);
+      break;
+    case 2:
+      target = 180;
+      Serial.println(target);
+      break;
+    case 3:
+      target = 270;
+      Serial.println(target);
+      break;
+  }
+  Serial.print(int(target));  
+}
+
+void PI_WRITE() {
+
+    if ( currentPos < 0 ) {
+      currentPos = 360 + currentPos;
+    }
+    
+    String myNum = String(currentPos);
+    int string_length = myNum.length() + 1;
+    char charArray[string_length];
+    myNum.toCharArray(charArray, string_length);
+    Wire.write(charArray[index]);
+    ++index;
+    if (index >= 3) {
+         index = 0;
+    }
+}
+
+void TICK() {
+
+  if ( cnt >= 1600 ) {
+    cnt = 0;
+  }
+
+  A_CURRENT_STATE = digitalRead(PIN_A); //read current state of signal A
+  B_CURRENT_STATE = digitalRead(PIN_B); //read current state of signal B
+  
+  if (A_CURRENT_STATE == B_CURRENT_STATE){
+    cnt -= 1;
+  }
+  else {
+    cnt += 1;
+  }
+   
+}
