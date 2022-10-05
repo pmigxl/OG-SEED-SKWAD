@@ -23,7 +23,7 @@
 
 - [x] Send back current position at regular intervals
 - [x] Display Setpoint and Actual Position on LCD screen by the Pi
-- [x] within System Integration
+- [x] Determine Pi Address and Slave Address
 
 
 
