@@ -21,8 +21,8 @@
 
 **System Integration:** *Brittany Ellington*
 
-- [x] List Things
-- [x] You Did
+- [x] Send back current position at regular intervals
+- [x] Display Setpoint and Actual Position on LCD screen by the Pi
 - [x] within System Integration
 
 
