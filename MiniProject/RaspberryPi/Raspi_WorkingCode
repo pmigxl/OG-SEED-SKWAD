@@ -1,4 +1,3 @@
-# import the necessary libraries 
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
@@ -10,8 +9,8 @@ import smbus
 import smbus2
 import board
 import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
-
-#lcd stuff
+#Python code for pi-
+#take the setpoint that the pi reads from the aruco marker and send it to arduino
 
 lcd_columns = 16
 lcd_rows = 2
@@ -20,19 +19,17 @@ i2c = board.I2C()
 lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
 lcd.clear()
 
-#address information for communication 
 abus = smbus.SMBus(1)
 address = 0x2a
 slave_address = 20
+output= 0
 
-#initlize variables 
-angle = 0
 data = 0
 
-#write information to arduino/lcd and print if there are errors
-def writeNumber(writeThis):
+
+def writeNumber(variableName):
     try:
-        abus.write_byte(address,writeThis)
+        abus.write_byte(address,variableName)
     except:
         print('io error')
     
@@ -45,22 +42,22 @@ def writeNumber(writeThis):
     except:
         print('io error')
     
-    tpos = ''
-    if ( writeThis == 0 ):
-        tpos = '00'
-    elif ( writeThis == 1 ):
-        tpos = '090'
-    elif ( writeThis == 2 ):
-        tpos = '180'
-    elif ( writeThis == 3 ):
-        tpos = '270'
-    lcd.message = 'Curr: ' + str(data) + '\nTest: ' + str(tpos) 
+    target = ''
+    if ( variableName == 0 ):
+        target = '00'
+    elif ( variableName == 1 ):
+        target = '090'
+    elif ( variableName == 2 ):
+        target = '180'
+    elif ( variableName == 3 ):
+        target = '270'
+    lcd.message = 'Current: ' + str(data) + '\nTarget: ' + str(target) 
     
     return -1
 
     
 
-#lcd setpoint funcction
+
 def readLCD(setpoint):
     
     setPrint = 'Setpoint: ' + str(setpoint)
@@ -69,63 +66,68 @@ def readLCD(setpoint):
 
 
 
-#Start continous capture 
-cap = cv2.VideoCapture(0)
-while(True):
-  
-    ret, frame = cap.read()
-    #convert to grey scale and find center of the camera
-    img = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    imgSize = img.shape
-    xSize = (imgSize[1] / 2)
-    ySize = (imgSize[0] / 2)
+with open ('camera_cal.npy', 'rb') as f:
+    camera_matrix = np.load(f)
+    camera_distortion = np.load(f)
     
-    #initilize parameters and select an aruco dictionary 
-    arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
-    arucoParams = cv2.aruco.DetectorParameters_create()
-    (corners, ids, rejected) = cv2.aruco.detectMarkers(img, arucoDict, parameters=arucoParams)
-    
-    #enter loop if an id is detected 
-    if len(corners)> 0:
-        ids = ids.flatten()
+aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_50)
+marker_size =50
 
-        for (markerCorner, markerID) in zip(corners, ids):
-            corners = markerCorner.reshape((4,2))
-            (topLeft, topRight, bottomRight, bottomLeft) = corners
-            topRight = (int(topRight[0]), int(topRight[1]))
-            bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
-            bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
-            topLeft = (int(topLeft[0]), int(topLeft[1]))
-            #add drawing overlay to the image 
-            cv2.line(frame, topLeft, topRight, (0, 255, 0), 2)
-            cv2.line(frame, topRight, bottomRight, (0, 255, 0), 2)
-            cv2.line(frame, bottomRight, bottomLeft, (0, 255, 0), 2)
-            cv2.line(frame, bottomLeft, topLeft, (0, 255, 0), 2)
-            
-            # find the center of the marker 
-            pX = int((topLeft[0] + bottomRight[0]) / 2.0)
-            pY = int((topLeft[1] + bottomRight[1]) / 2.0)
-            cv2.circle(img, (cX, cY), 4, (0, 0, 255), -1)
+cap = cv2.VideoCapture(0)
+
+camera_width = 640
+camera_height = 480
+camera_frame_rate = 40
+
+while(True):
     
-            # determine the quadrant 
-            if pX > xSize and pY < ySize:
-                angle = 1
-            elif pX > xSize and pY > ySize:
-                angle = 2
-            elif pX < xSize and pY > ySize:
-                angle = 3
-            elif pX < xSize and pY < ySize:
-                angle = 0
-            # Display on frame
-            anglePrint = str(angle) + ' degrees'
-            cv2.putText(frame, anglePrint, (topRight[0], topRight[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
-            writeNumber(angle)
-          
-        # show the frame 
-        cv2.imshow('Image', frame)
-    else:
-        cv2.imshow('Image', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    ret, frame = cap.read()
+    
+    grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    
+    corners, ids, rejectedImgPoints = aruco.detectMarkers(grey, aruco_dict, camera_matrix, camera_distortion)
+  
+    if ids is not None:
+            aruco.drawDetectedMarkers(frame, corners)
+            rvec_list_all, tvec_list_all, _objPoints = aruco.estimatePoseSingleMarkers(corners, marker_size, camera_matrix, camera_distortion)
+                
+            rvec= rvec_list_all[0][0]
+            tvec = tvec_list_all[0][0]
+            
+            aruco.drawAxis(frame, camera_matrix, camera_distortion, rvec, tvec, 100)
+            
+            rvec_flipped = rvec * 1
+            tvec_flipped = tvec * 1
+            rotation_matrix, jacobian = cv2.Rodrigues(rvec_flipped)
+            realworld_tvec = np.dot(rotation_matrix, tvec_flipped)
+            
+            pitch, roll, yaw = rotationMatrixToEulerAngles(rotation_matrix)
+            
+            tvec_str = "x=%4.0f y%4.0f angle=%4.0f"%(realworld_tvec[0], realworld_tvec[1], math.degrees(yaw))
+            
+            if (realworld_tvec[0] < 1 and realworld_tvec[1] < 1):
+                output = 0
+                print(output)
+                
+            elif (realworld_tvec[0] < 1 and realworld_tvec[1] > 1):
+                output = 1
+                print(output)
+                
+            elif (realworld_tvec[0] > 1 and realworld_tvec[1] < 1):
+                output = 2
+                print(output)
+            elif (realworld_tvec[0] > 1 and realworld_tvec[1] > 1):
+                output = 3
+                print(output)
+                
+            writeNumber(output)
+            cv2.putText(frame, tvec_str, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
+                
+    cv2.imshow("frame", frame)
+
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord('q'):
         break
+  
 cap.release()
-cv2.destroyAllWindows()
+cv.destroyAllWindows()
