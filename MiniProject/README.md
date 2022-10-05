@@ -3,9 +3,9 @@
 
 **Computer Vision:** *Alexis Capitano*
 
-- [x] List Things
-- [x] You Did
-- [x] within Computer Vision
+- [x] Detect Aruco marker with camera
+- [x] Identify which quuadrant of the camera screen the marker is in 
+- [x] Assign each quadrant an output and provide that to the I2C communication
 
 **Localization:** *Preston Miglaw*
 
