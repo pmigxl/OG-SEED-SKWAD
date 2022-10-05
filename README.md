@@ -1,27 +1,18 @@
 # OG-SEED-SKWAD
 
-> SEED LAB Purpose: To perform a design and build activity centered around a challenge problem by prototyping a complex system which utilizes concepts from past electrical engineering courses
+**SEED LAB Purpose:** To perform a design and build activity centered around a challenge problem by prototyping a complex system which utilizes concepts from past electrical engineering courses
 
-**Computer Vision:** *Alexis Capitano*
+> **Computer Vision:** *Alexis Capitano*
 
-* List
-* Things
-* You Do
+> **Localization:** *Preston Miglaw*
 
-**Localization:** *Preston Miglaw*
+> **Simulation and Control:** *Matt Lange*
 
-* List
-* Things
-* You Do
+> **System Integration:** *Brittany Ellington*
 
-**Simulation and Control:** *Matt Lange*
+***Files***
 
-* List
-* Things
-* You Do
+MiniProject: Contains Arduino and Pi code which rotates a motor based on vision inputs
 
-**System Integration:** *Brittany Ellington*
+Misc: Contains iterations of code from MiniProject  |  *not* final working code
 
-* List
-* Things
-* You Do
