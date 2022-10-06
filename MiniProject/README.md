@@ -9,9 +9,9 @@
 
 **Localization:** *Preston Miglaw*
 
-- [x] List Things
-- [x] You Did
-- [x] within Localization
+- [x] Detect position of the encoder
+- [x] Identify which direction the encoder needs to move to reach new position
+- [x] Spin encoder to new position
 
 **Simulation and Control:** *Matt Lange*
 
