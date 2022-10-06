@@ -1,3 +1,6 @@
+//This program reads in data from a raspberry pi and rotates an encoder to match the position specified by the pi.
+//The encoder is rotated using the motor shield library and by reading in the position of the encoder.
+
 #include <DualMC33926MotorShield.h>
 #include <Wire.h>
 
