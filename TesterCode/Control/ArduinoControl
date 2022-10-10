@@ -1,1 +1,49 @@
-e
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+
+
+DualMC33926MotorShield md;
+
+const int PIN_CLK = 2;
+const int PIN_DT = 5;
+float CPR = 20;
+
+int sample_rate = 1600;
+int count;
+int error = 0;
+
+const double Kp = 3.5;
+const double Ki = 0.01;
+
+int motorVal = 200;
+
+void setup() {
+  // put your setup code here, to run once:
+  pinMode(PIN_CLK, INPUT);
+  pinMode(PIN_DT, INPUT);
+  pinMode(12,INPUT);
+  pinMode(13, OUTPUT);
+
+  Serial.begin(115200);
+  md.init(); 
+  delay(1000); 
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  md.setM1Speed(motorVal);
+   while(millis() < timer + sample_rate){
+     count = (myEnc.read())/4;
+     Serial.println("Counts:");
+     Serial.println(count);
+     rad = (count/CPR)*(2*3.14159);
+     Serial.println("Rads");
+     Serial.println(rad);
+
+   }
+  
+}
+
+
+
