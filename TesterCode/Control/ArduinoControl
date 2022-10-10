@@ -1,3 +1,9 @@
+/*Technical_Sim.ino
+Date: 10/10/22
+This our technical code that organizes our original code for simulation. It is responsible for running the robot motor, reads the counts, and converts them to angle 
+in radians
+*/
+
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
 
