@@ -1,1 +1,49 @@
-e
+#Test Store Image 
+#Creator: Alexis Capitano 
+#Date: 9/19/2022
+#Class:EENG 350
+#Purpose: This code with take a filename string input from user, take a picture, display the picture in a window, and save the picture under the filename given by the user.
+#To Use: Run the code, provide a file name when prompted, and point the camera at what you wish to capture. 
+
+#import required tools
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
+import cv2
+import os
+
+
+#take user input 
+fileName=input('File Name:')
+
+#adjust camera and show preview 
+camera = PiCamera()
+rawCapture = PiRGBArray(camera)
+
+camera.start_preview()
+time.sleep(5)
+
+print("Capturing Image...")
+
+camera.resolution = (1920,1088)
+camera.capture(rawCapture, format="bgr")
+
+#store raw capture, display image in window, and stop preview 
+image = rawCapture.array
+
+camera.stop_preview()
+
+cv2.imshow(fileName, image)
+
+#save image as a png file
+print("Saving image %s" % fileName)
+
+try:
+    cv2.imwrite('/home/pi/Desktop/Assignment 2/Exercise 1/'+fileName+'.png', image)
+
+except:
+    print("Couldn't save "+fileName)
+    pass
+
+cv2.waitKey(0) 
+cv2.destroyAllWindows()
