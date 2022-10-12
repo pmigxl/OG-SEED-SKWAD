@@ -1,0 +1,29 @@
+#include <DualMC33926MotorShield.h>
+const int M1_CLK = 2;
+const int M2_CLK = 3;
+const int M1_DT = 5;
+const int M2_DT = 6;
+DualMC33926MotorShield md;
+
+double motorVar = 200; //max is 400
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  //attach an interrupt for each motor here
+  //attachInterrupt(digitalPinToInterrupt(M1_CLK), M1_TICK, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(2), M2_TICK, CHANGE);
+  md.init();
+  delay(1000);
+}
+
+void loop() {
+  
+  Forward(motorVar);
+}
+
+
+int Forward(int distance){
+  md.setM1Speed(distance);
+  md.setM2Speed(distance); //set M1 and M2 values to 200 to move forward
+  }
