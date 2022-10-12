@@ -12,6 +12,8 @@
 
 ***Files***
 
+Demo1: Contains Arduino and Pi code which rotates the robot by a specified angle in degrees and moves it forward a specified distance in feet
+
 MiniProject: Contains Arduino and Pi code which rotates a motor based on vision inputs
 
 Misc: Contains various iterations of code from MiniProject
