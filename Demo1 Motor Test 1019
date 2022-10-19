@@ -1,0 +1,88 @@
+#include <DualMC33926MotorShield.h>
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+
+DualMC33926MotorShield md;
+
+double motorVar = 400; //max is 400
+
+int count;
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+void setup() {
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  //attach an interrupt for each motor here
+  attachInterrupt(digitalPinToInterrupt(M1_CLK), M1_TICK, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(M2_CLK), M2_TICK, CHANGE);
+  md.init();
+  delay(1000);
+}
+
+void loop() {
+  Forward(motorVar);
+  delay(10000);
+}
+
+
+int Forward(int distance){
+  md.setM1Speed(distance);
+  md.setM2Speed(-1*distance);
+  //md.setSpeeds();
+   //set M1 and M2 values to 200 to move forward
+  }
+
+  
+//ISR Functions for motors
+void M1_TICK(){
+  if (count >= 1600 ) {
+    count = 0;
+  }
+  M1_CLK_STATE = digitalRead(M1_CLK);
+  M1_DT_STATE = digitalRead(M1_DT);
+
+  if(M1_CLK_STATE == M1_DT_STATE){
+    count -+ 1;
+    Serial.println("M1 count:");
+    Serial.println(count);
+    }
+  else{
+    count += 1;
+    Serial.println("M1 count:");
+    Serial.println(count);
+    }
+  }
+
+void M2_TICK(){
+  if (count >= 1600) {
+    count = 0;
+  }
+  M2_CLK_STATE = digitalRead(M2_CLK);
+  M2_DT_STATE = digitalRead(M2_DT);
+
+  if(M2_CLK_STATE == M2_DT_STATE){
+    count -+ 1;
+    Serial.println("M2 count:");
+    Serial.println(count);
+    }
+  else{
+    count += 1;
+    Serial.println("M2 count:");
+    Serial.println(count);
+    }
+  }
+
+/* 
+void PI_WRITE(){
+  *INSERT CODE WRITE FROM PI TO ARDUINO HERE*
+
+}
+
+
+*/
+
