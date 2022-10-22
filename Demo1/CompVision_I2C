@@ -81,6 +81,14 @@ camera_height = 480
 camera_frame_rate = 40
 
 while(True):
+
+# Adding user input for distance
+    # var = input('Enter a distance 1 - 10 feet: ")
+    # var = int(var)
+    # if not var:
+    # continue
+    # writeNumber(var)
+    # print("RPI: Hi Arduino, I sent you ", var, " feet")
    
     ret, frame = cap.read()
     
