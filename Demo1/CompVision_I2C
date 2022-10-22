@@ -52,6 +52,9 @@ def writeNumber(comOutput):
         target = '270'
     lcd.message = 'Current: ' + str(info) + '\nTarget: ' + str(target) 
     
+    // Report Distance & Angle to LCD
+    // lcd.message = 'Marker Detected' + '\nAngle: ' + str(target)
+    
     return -1
 
     
