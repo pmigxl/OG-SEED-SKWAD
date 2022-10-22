@@ -1,0 +1,191 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+//#include <Wire.h>
+
+//#define SLAVE_ADDRESS 0x20
+//#define PI_ADDRESS 0x2a
+#define countsPerFt 2123
+
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+unsigned long timer = 0;
+//int timerPerFt = 1000;
+bool flag = false;
+
+float sample_time = 550; //this is the time it takes for the robot to reach 1 ft at a speed of 200 PWM
+
+int M1_read;
+int M2_read;
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK, M2_DT);
+DualMC33926MotorShield md;
+
+double motorVar = 200; //max is 400
+
+
+int count;
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+// int numDist = 0;
+// int numAngle = 0;
+// int state = 0;
+
+void setup() {
+  Serial.begin(9600);
+  timer = 0;
+  //attach an interrupt for each motor here
+  //attachInterrupt(digitalPinToInterrupt(M1_CLK), M1_TICK, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(M2_CLK), M2_TICK, CHANGE);
+  md.init();
+  delay(1000);
+
+  //  Wire.begin(PI_ADDRESS);
+  //  Wire.onReceive(PI_READ);
+  //  Wire.onRequest(PI_WRITE);
+
+}
+
+void loop() {
+  // Serial.println("");
+  Forward(motorVar);
+  M1_read = (encoderM1.read() * -1);
+  M2_read = (encoderM2.read());
+
+  
+  float travel_distance = 4.0; //the number of feet requested
+  sample_time = sample_time * travel_distance;
+  timer = millis();
+  while (millis() < timer + sample_time) {
+    Serial.println("moving");
+    md.setM1Speed(motorVar);
+    md.setM2Speed(-1 * motorVar);
+  }
+  flag = true;
+  while (flag == true) {
+    Serial.println("stopping");
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+  }
+
+  //  Serial.println("Encoder 1 value: ");
+  //  Serial.print(M1_read);
+  //  Serial.println("");
+  //  Serial.println("Encoder 2 value: ");
+  //  Serial.print(M2_read);
+  //  Serial.println("");
+  //  Serial.println("timer: ");
+  //  Serial.print(timer);
+  //  Serial.println("");
+}
+
+
+int Forward(int motorVar) {
+  timer = millis();
+  //while (millis() < timer + timerPerFt) {
+  while (millis() < timer + sample_time) {
+    md.setM1Speed(motorVar);
+    md.setM2Speed(-1 * motorVar);
+  }
+
+  //md.setSpeeds();
+  //set M1 and M2 values to 200 to move forward
+}
+
+// I2C with distance input from Pi
+
+//void receiveData(int byteCount) {
+//  while (Wire.available()) {
+//    numDist = Wire.read();
+//    numAngle = Wire.read();
+//    Serial.print("data received: ");
+
+// Print distance up to 2 decimal places
+//    Serial.println(numDist, 2);
+//    Serial.print(" feet and ");
+
+// Print angle up to 2 decimal places
+//    Serial.println(numAngle, 2);
+//    Serial.print(" degrees"); 
+//    if (numDist == 1 || numAngle == 1) {
+//      if (state == 0) {
+//        digitalWrite(13, HIGH);
+//        state = 1;
+//      }
+//      else {
+//        digitalWrite(13, LOW);
+//        state = 0;
+//      }
+//    }
+//  }
+//}
+
+//void sendData() {
+//  Wire.write(numDist);
+//}
+
+
+
+
+/*
+  //ISR Functions for motors
+  void M1_TICK(){
+  if (count >= 1600 ) {
+    count = 0;
+  }
+  M1_CLK_STATE = digitalRead(M1_CLK);
+  M1_DT_STATE = digitalRead(M1_DT);
+
+  if(M1_CLK_STATE == M1_DT_STATE){
+    count -+ 1;
+    Serial.println("M1 count:");
+    Serial.println(count);
+    }
+  else{
+    count += 1;
+    Serial.println("M1 count:");
+    Serial.println(count);
+    }
+  }
+
+  void M2_TICK(){
+  if (count >= 1600) {
+    count = 0;
+  }
+  M2_CLK_STATE = digitalRead(M2_CLK);
+  M2_DT_STATE = digitalRead(M2_DT);
+
+  if(M2_CLK_STATE == M2_DT_STATE){
+    count -+ 1;
+    Serial.println("M2 count:");
+    Serial.println(count);
+    }
+  else{
+    count += 1;
+    Serial.println("M2 count:");
+    Serial.println(count);
+    }
+  }
+
+  /*
+
+  void PI_READ(int byteCount) {
+    int data = 0;
+    data = Wire.read();
+    ...
+
+  }
+
+  void PI_WRITE(){
+    INSERT CODE WRITE FROM PI TO ARDUINO HERE
+    ...
+
+  }
+
+
+*/
