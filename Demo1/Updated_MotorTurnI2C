@@ -1,0 +1,165 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+#include <Wire.h>
+
+#define SLAVE_ADDRESS 0x20
+#define PI_ADDRESS 0x2a
+#define countsPerFt 2123
+
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+unsigned long timer = 0;
+int timerPerFt = 1000;
+bool flag = false;
+
+float sample_time = 950; //this is the time it takes for the robot to reach 1 ft at a speed of 200 PWM
+float sample_angle = 900; //this is the time it takes for the robot to turn 90 degrees at a speed of 200 PWM
+
+int M1_read;
+int M2_read;
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK, M2_DT);
+DualMC33926MotorShield md;
+
+double motorVar = 200; //max is 400
+
+
+int count;
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+int index = 0;
+int target = 0;
+double currentPos = 0;
+
+void setup() {
+  Serial.begin(9600);
+  timer = 0;
+  md.init();
+  delay(1000);
+
+  Wire.begin(PI_ADDRESS);
+  Wire.onReceive(PI_READ);
+  Wire.onRequest(PI_WRITE);
+
+}
+
+void loop() {
+  turn();
+  forward();
+}
+
+
+void turn() {
+  //*note* right motor is M1, left motor is M2
+  //counter-clockwise is positive, clockwise is negative
+  timer = millis();
+  double angle = -3.14; //angle in radians to turn robot
+  sample_angle = abs(sample_angle * angle);
+  if (angle > 0) {
+    while (millis() < timer + sample_angle) {
+      Serial.println("moving to the left");
+      md.setM1Speed(200);
+      md.setM2Speed(0);
+    }
+  }
+  else if (angle < 0) {
+    while (millis() < timer + sample_angle) {
+      Serial.println("moving to the right");
+      md.setM1Speed(0);
+      md.setM2Speed(-200);
+    }
+  }
+}
+
+
+
+void forward() {
+  timer = millis();
+  float distance = 6.0; //the number of feet requested
+  sample_time = sample_time * distance;
+  while (millis() < timer + sample_time) {
+    Serial.println("moving forward");
+    //*note* right motor is M1, left motor is M2
+    md.setM1Speed(215); //right motor
+    md.setM2Speed(-185); //left motor
+  }
+  flag = true;
+  while (flag == true) {
+    Serial.println("stopping");
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+  }
+}
+
+// callback for received data
+//void receiveData(int byteCount) {
+//  while (Wire.available()) {
+//    number = Wire.read();
+//    Serial.print("data received: ");
+//    Serial.println(number);
+//    if (number == 1) {
+//      if (state == 0) {
+//        digitalWrite(13, HIGH);
+//        state = 1;
+//      }
+//      else {
+//        digitalWrite(13, LOW);
+//        state = 0;
+//      }
+//    }
+//  }
+//}
+//
+//// callback for sending data
+//void sendData() {
+//  number = number + 0;
+//  Wire.write(number);
+//}
+
+void PI_READ(int byteCount) {
+  int data = 0;
+  data = Wire.read(); // receive a byte as char
+
+  switch(data) {
+    case 0:
+      target = 0;
+      Serial.println(target);
+      break;
+    case 1:
+      target = 90;
+      Serial.println(target);
+      break;
+    case 2:
+      target = 180;
+      Serial.println(target);
+      break;
+    case 3:
+      target = 270;
+      Serial.println(target);
+      break;
+  }
+  Serial.print(int(target));
+}
+
+void PI_WRITE() {
+
+    if ( currentPos < 0 ) {
+      currentPos = 360 + currentPos;
+    }
+
+    String myNum = String(currentPos);
+    int string_length = myNum.length() + 1;
+    char charArray[string_length];
+    myNum.toCharArray(charArray, string_length);
+    Wire.write(charArray[index]);
+    ++index;
+    if (index >= 3) {
+         index = 0;
+    }
+}
