@@ -15,7 +15,8 @@ int timerPerFt = 1000;
 bool flag = false;
 
 float sample_time = 950; //this is the time it takes for the robot to reach 1 ft at a speed of 200 PWM
-float sample_angle = 900; //this is the time it takes for the robot to turn 90 degrees at a speed of 200 PWM
+float sample_angle_Left = 435; //this is the time it takes for the robot to turn 90 degrees at a speed of 200 PWM
+float sample_angle_Right = 1600;
 
 int M1_read;
 int M2_read;
@@ -59,19 +60,21 @@ void turn() {
   //*note* right motor is M1, left motor is M2
   //counter-clockwise is positive, clockwise is negative
   timer = millis();
+  //3.14 radians = 180 degrees
+  //
   double angle = -3.14; //angle in radians to turn robot
-  sample_angle = abs(sample_angle * angle);
+  sample_angle_Left = abs(sample_angle_Left * angle);
   if (angle > 0) {
-    while (millis() < timer + sample_angle) {
+    while (millis() < timer + sample_angle_Left) {
       Serial.println("moving to the left");
       md.setM1Speed(200);
-      md.setM2Speed(0);
+      md.setM2Speed(200);
     }
   }
   else if (angle < 0) {
-    while (millis() < timer + sample_angle) {
+    while (millis() < timer + sample_angle_Right) {
       Serial.println("moving to the right");
-      md.setM1Speed(0);
+      md.setM1Speed(-200);
       md.setM2Speed(-200);
     }
   }
@@ -81,7 +84,7 @@ void turn() {
 
 void forward() {
   timer = millis();
-  float distance = 6.0; //the number of feet requested
+  float distance = 3.0; //the number of feet requested
   sample_time = sample_time * distance;
   while (millis() < timer + sample_time) {
     Serial.println("moving forward");
