@@ -10,7 +10,7 @@ int timerPerFt = 1000;
 bool flag = false;
 
 float sample_time = 950; //this is the time it takes for the robot to reach 1 ft at a speed of 200 PWM
-float sample_angle = 950; //this is the time it takes for the robot to turn 90 degrees at a speed of 200 PWM
+float sample_angle = 900; //this is the time it takes for the robot to turn 90 degrees at a speed of 200 PWM
 
 int M1_read;
 int M2_read;
