@@ -2,11 +2,14 @@
 
 
 **Computer Vision:** *Alexis Capitano*
+Updated_CompVisionI2C
 
 - [x] Detect Aruco marker with camera
 - [x] Calculate angle between marker and center of camera 
 - [x] Provide angle output and detection status to the LCD 
 
+To use this program, run the code on the raspberry pi with the LCD plugged in and present an aruco marker to the camera. 
+Angle detection and LCD display should follow. 
 **Localization:** *Preston Miglaw*
 
 - [x] Detect position of the encoder
