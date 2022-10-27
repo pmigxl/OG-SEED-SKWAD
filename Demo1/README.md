@@ -2,7 +2,7 @@
 
 
 **Computer Vision:** *Alexis Capitano*
-Updated_CompVisionI2C
+"Updated_CompVisionI2C"
 
 - [x] Detect Aruco marker with camera
 - [x] Calculate angle between marker and center of camera 
