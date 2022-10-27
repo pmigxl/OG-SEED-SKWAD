@@ -10,6 +10,7 @@ Updated_CompVisionI2C
 
 To use this program, run the code on the raspberry pi with the LCD plugged in and present an aruco marker to the camera. 
 Angle detection and LCD display should follow. 
+
 **Localization:** *Preston Miglaw*
 
 - [x] Detect position of the encoder
