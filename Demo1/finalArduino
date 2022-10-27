@@ -57,17 +57,17 @@ void turn(){
   double angle = -3.14; //angle in radians to turn robot
   sample_angle = abs(sample_angle * angle);
   if(angle > 0){
-     while(millis() < timer + sample_angle){
+     while(millis() < timer + sample_angle){ //while loop creates a delay to stop the robot after a cetain time
     Serial.println("moving to the left");
-    md.setM1Speed(200); 
-    md.setM2Speed(0);
+    md.setM1Speed(200); //turns the motor to the left
+    md.setM2Speed(-200);
     }
   }
   else if(angle < 0){
-     while(millis() < timer + sample_angle){
+     while(millis() < timer + sample_angle){ //while loop creates a delay to stop the robot after a cetain time
     Serial.println("moving to the right");
-    md.setM1Speed(0); 
-    md.setM2Speed(-200);
+    md.setM1Speed(-200); //turns the motor to the right 
+    md.setM2Speed(200); 
     }
   }
   
@@ -78,10 +78,11 @@ void turn(){
 
  
 void forward(){
+  //Sets the timer to count the seconds
   timer = millis();
   float distance = 1.0; //the number of feet requested
-  sample_time = sample_time * distance; 
-  while(millis() < timer + sample_time){
+  sample_time = sample_time * distance; //converts the sample time to the amount of distance specified 
+  while(millis() < timer + sample_time){ //while loop creates a delay to stop the robot after a cetain time
   Serial.println("moving forward");
   //*note* right motor is M1, left motor is M2
   md.setM1Speed(215); //right motor
