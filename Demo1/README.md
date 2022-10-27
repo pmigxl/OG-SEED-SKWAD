@@ -1,11 +1,11 @@
-> Mini Project Purpose: To design a control system which regulates the rotational speed of a wheel attached to a motor based using an Arduino and Raspberry Pi, along with a mechanical encoder and camera. 
+> Demo 1 Purpose: Design a system that rotates and moves a given distance/angle based on user input 
 
 
 **Computer Vision:** *Alexis Capitano*
 
 - [x] Detect Aruco marker with camera
-- [x] Identify which quuadrant of the camera screen the marker is in 
-- [x] Assign each quadrant an output and provide that to the I2C communication
+- [x] Calculate angle between marker and center of camera 
+- [x] Provide angle output and detection status to the LCD 
 
 **Localization:** *Preston Miglaw*
 
