@@ -12,7 +12,7 @@ Later, this code will be revised using the diameter of the wheel and the number 
 const int M1_CLK = 2;
 const int M1_DT = 5;
 const int M2_CLK = 3;
-const int M2_DT = 6; //
+const int M2_DT = 6; // pins that are set to each motor on the robot
 unsigned long timer = 0;
 int timerPerFt = 1000;
 bool flag = false;
