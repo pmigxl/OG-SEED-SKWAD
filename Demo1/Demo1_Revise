@@ -23,7 +23,7 @@ int M2_CLK_STATE = 0;
 int M2_DT_STATE = 0;
 
 void setup(){
-  Serial.begin(9600);
+  Serial.begin(115200);
   timer = 0;
   md.init();
 }
@@ -42,11 +42,12 @@ void turn()){
   double d = 1.0;
   enc1 = encoderM1.Read();
   enc2 = encoderM2.Read();
-
+  Serial.println(enc1);
+  Serial.println(enc2);
   a = ((enc1 - enc2)/2) * (2*3.14159)/motor_counts * r;
   change_phi = a/d;
   phi = phi_old + change_phi; //converts encoder counts and radius of the wheel to an angle of robot rotation
-
+  Serial.println(phi);
 
 
   //md.setM1Speed();
