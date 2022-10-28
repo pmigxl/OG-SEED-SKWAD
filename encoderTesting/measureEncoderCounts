@@ -1,1 +1,62 @@
-#include <"Encoder.h">
+#include "Encoder.h"
+
+#define M1Speed    2
+#define M1Dir      5
+#define M2Speed    3
+#define M2Dir      6
+
+# define cpr       1600
+
+//Establish positions of encoders
+double oldPosition1 = 0;
+double newPosition1 = 0;
+double oldPosition2 = 0;
+double newPosition2 = 0; 
+
+Encoder M1Encoder(2,5); 
+Encoder M2Encoder(3,6);
+
+double errorCorrection = 0;
+
+int countLoop = 0;
+
+double Kp = 0.05;
+
+void setup() {
+  pinMode(4, OUTPUT); // here we set the tri-state
+  digitalWrite(4, HIGH);
+  
+  pinMode(M1Dir, OUTPUT); // RIGHT WHEEL 
+  pinMode(M2Dir, OUTPUT); // LEFT WHEEL 
+  
+  pinMode(M1Speed, OUTPUT); // motor 1 speed 
+  pinMode(M2Speed, OUTPUT); // motor 2 speed
+  
+  pinMode(12, INPUT); // status flag indicator
+  Serial.begin(9600);
+
+}
+
+void loop() {
+  newPosition1 = abs(M1Encoder.read()/4);
+  newPosition2 = abs(M2Encoder.read()/4);
+  Serial.println(newPosition1);
+
+  
+
+  switch (state){ // if we are at state = 1 we are turning, state = 2 we are going straight 
+    
+    case 1: // here we turn a desired amount 
+    if(flagAngle == 0) {
+      angleControl(rectifiedAngle);
+    }
+    break;
+    
+    case 2: // here we will traverse the desired position 
+    if(flagDistance == 0) {
+      distanceControl(rectifiedPosition);
+    }
+    break;
+  }
+}
+}
