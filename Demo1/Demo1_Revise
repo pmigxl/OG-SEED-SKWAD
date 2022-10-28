@@ -41,7 +41,9 @@ void turn()){
   double phi;
   double d = 1.0;
   enc1 = encoderM1.Read();
+  Serial.println(enc1);
   enc2 = encoderM2.Read();
+  Serial.println(enc2);
 
   a = ((enc1 - enc2)/2) * (2*3.14159)/motor_counts * r;
   change_phi = a/d;
