@@ -1,0 +1,82 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+
+bool flag = false;
+const int motor_counts = 1600;
+const int r = 1.5; //radius of the wheel
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK,M2_DT);
+DualMC33926MotorShield md;
+
+
+double motorVar = 200; 
+
+int count;
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+void setup(){
+  Serial.begin(9600);
+  timer = 0;
+  md.init();
+}
+
+
+void loop() {
+ turn();
+}
+
+
+void turn()){
+  double a;
+  double change_phi;
+  double phi_old;
+  double phi;
+  double d = 1.0;
+  enc1 = encoderM1.Read();
+  Serial.println(enc1);
+  enc2 = encoderM2.Read();
+  Serial.println(enc2);
+
+  a = ((enc1 - enc2)/2) * (2*3.14159)/motor_counts * r;
+  change_phi = a/d;
+  phi = phi_old + change_phi; //converts encoder counts and radius of the wheel to an angle of robot rotation
+
+
+   /*
+  double position;
+  unsigned long currentTime = millis();
+  unsigned long prevTime;
+  double totalError;
+  double lastError;
+  double rateError;
+  double Setpoint = 2;
+  dobule error;
+  double errorHist
+  error = Setpoint - position;
+  totalError += error*elapsedTime;
+  rateError = (error - lastError)/elapsedTime;
+
+  double PID_value = (Kp * error) + (Ki *rateError);
+  errorHist = error;
+  prevTime = currentTime;
+  return PID_value;
+  */
+
+
+  //md.setM1Speed();
+  //md.setM2Speed();
+  while(flag == true){
+    Serial.println("stopping");
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    } //stop the robot after turn is complete
+  }
+}
