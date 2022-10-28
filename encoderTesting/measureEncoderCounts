@@ -43,18 +43,11 @@ void loop() {
   Serial.println(newPosition1);
 
   
-
-  switch (state){ // if we are at state = 1 we are turning, state = 2 we are going straight 
+  switch (state){ // if we are at state = 1 we are turning, 
     
     case 1: // here we turn a desired amount 
     if(flagAngle == 0) {
       angleControl(rectifiedAngle);
-    }
-    break;
-    
-    case 2: // here we will traverse the desired position 
-    if(flagDistance == 0) {
-      distanceControl(rectifiedPosition);
     }
     break;
   }
