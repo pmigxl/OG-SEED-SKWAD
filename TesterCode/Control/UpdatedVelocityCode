@@ -1,0 +1,122 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+const int sample_time = 1000;
+
+bool flag = false;
+const int motor_counts = 3200;
+const double r = 3; //radius of the wheel in inches 
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK,M2_DT);
+DualMC33926MotorShield md;
+
+
+double motorVar = 200; 
+
+int count;
+int timer;
+double enc1;  
+double enc2;
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+void setup(){
+  Serial.begin(115200);
+  timer = 0;
+  md.init();
+}
+
+
+void loop() {
+  turn();
+}
+
+
+void turn(){
+  int turnCounter = 0;
+  double a;
+  double change_phi;
+  double phi_old;
+  double phi;
+  double d = 6.0; // distance between wheels in inches
+  enc1 = encoderM1.read();
+  enc2 = -1* encoderM2.read();
+  //Serial.print("Enc 1: ");
+  //Serial.println(enc1);
+  //Serial.print("\t");
+  //Serial.print("Enc 2: ");
+  //Serial.print(enc2);
+  //Serial.print("\t");
+
+  double deltaCounts = (enc1 - enc2)/2;
+  //Serial.print(deltaCounts);
+  //Serial.print("\t");
+  double wheelTheta = (2 * 3.14159 * deltaCounts) / motor_counts;
+  //Serial.print(wheelTheta);
+  //Serial.print("\t");
+  double wheelDistance = (wheelTheta * r);
+  //Serial.print(wheelDistance);
+  //Serial.print("\t");
+ 
+  double avgCounts = (enc1 + enc2)/2;
+  //Serial.print(avgCounts);
+  //Serial.print("\t");
+  double avgwheelTheta = (2 * 3.14159 * avgCounts) / motor_counts;
+  //Serial.print(avgwheelTheta);
+  //Serial.print("\t");
+  double avgwheelDistance = (avgwheelTheta*r);
+  timer = millis();
+  int motorOnTime = 0;
+  while(millis() < timer + sample_time){
+    md.setM1Speed(200);
+    md.setM2Speed(-200);
+    motorOnTime = millis();
+    //Serial.println("Dist: ");
+    //Serial.println(avgwheelDistance);
+    //Serial.println("");
+    //Serial.println("Time: ");
+    //Serial.println(timer);
+    //Serial.println("");
+    //int reGetTime = millis() - motorOnTime;
+    //double velocity = avgwheelDistance / reGetTime;
+    //Serial.println("Velocity: ");
+    //Serial.println(velocity);
+    //Serial.println("");
+  }
+
+  int reGetTime = timer;
+  double velocity = avgwheelDistance / reGetTime;
+  Serial.println("Dist: ");
+  Serial.println(avgwheelDistance);
+  Serial.println("");
+  Serial.println("Velocity: ");
+  Serial.println(velocity);
+  Serial.println("");
+  
+  
+  //Serial.print(avgwheelDistance);
+  //Serial.print("\t");
+  
+  change_phi = wheelDistance/d;
+ 
+  phi = phi_old + change_phi; //converts encoder counts and radius of the wheel to an angle of robot rotation
+  phi_old = phi;
+  //Serial.print("Angle: ");
+  //erial.println(phi);
+
+
+  //md.setM1Speed();
+  //md.setM2Speed();
+  while(flag == true){
+    Serial.println("stopping");
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    } //stop the robot after turn is complete
+  turnCounter = turnCounter + 1;
+  }
