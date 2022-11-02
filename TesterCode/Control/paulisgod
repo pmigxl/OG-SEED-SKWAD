@@ -71,8 +71,7 @@ void turn(){
   //Serial.print(avgwheelTheta);
   //Serial.print("\t");
   double avgwheelDistance = (avgwheelTheta*r);
-  timer = millis();
-  double motorOnTime = millis();
+  
   double velocity = 0;
   while(millis() < timer + sample_time){
     motorOnTime = millis();
@@ -83,7 +82,13 @@ void turn(){
     double reGetTime = (millis() - motorOnTime) / 1000;
     //Serial.print("Motor time: ");
     //Serial.println(reGetTime, 6);
-    velocity = (avgwheelDistance / reGetTime);
+    timer = millis();
+    double lastTime;
+    double elapsedTime = ((double) timer - lastTime)/1000;
+    double lastDist;
+    double elapsedDist = ((double) avgwheelDistance - lastDist));
+    velocity = (elapsedDist / elapsedTime);
+    lastTime = timer;
   }
 
 
