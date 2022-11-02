@@ -34,11 +34,12 @@ void setup(){
 
 
 void loop() {
- turn();
+  turn();
 }
 
 
 void turn(){
+  int turnCounter = 0;
   double a;
   double change_phi;
   double phi_old;
@@ -47,11 +48,11 @@ void turn(){
   enc1 = encoderM1.read();
   enc2 = -1* encoderM2.read();
   //Serial.print("Enc 1: ");
-  Serial.println(enc1);
-  Serial.print("\t");
+  //Serial.println(enc1);
+  //Serial.print("\t");
   //Serial.print("Enc 2: ");
-  Serial.print(enc2);
-  Serial.print("\t");
+  //Serial.print(enc2);
+  //Serial.print("\t");
 
   double deltaCounts = (enc1 - enc2)/2;
   //Serial.print(deltaCounts);
@@ -59,7 +60,7 @@ void turn(){
   double wheelTheta = (2 * 3.14159 * deltaCounts) / motor_counts;
   //Serial.print(wheelTheta);
   //Serial.print("\t");
-  double wheelDistance = (wheelTheta*r);
+  double wheelDistance = (wheelTheta * r);
   //Serial.print(wheelDistance);
   //Serial.print("\t");
  
@@ -71,32 +72,43 @@ void turn(){
   //Serial.print("\t");
   double avgwheelDistance = (avgwheelTheta*r);
   timer = millis();
+  int motorOnTime = 0;
   while(millis() < timer + sample_time){
     md.setM1Speed(200);
     md.setM2Speed(-200);
-    Serial.println("Dist: ");
-    Serial.println(avgwheelDistance);
-    Serial.println("");
-    Serial.println("Time: ");
-    Serial.println(timer);
-    Serial.println("");
-    double velocity = avgwheelDistance / timer;
-    Serial.println("Velocity: ");
-    Serial.println(velocity);
-    Serial.println("");
+    motorOnTime = millis();
+    //Serial.println("Dist: ");
+    //Serial.println(avgwheelDistance);
+    //Serial.println("");
+    //Serial.println("Time: ");
+    //Serial.println(timer);
+    //Serial.println("");
+    //int reGetTime = millis() - motorOnTime;
+    //double velocity = avgwheelDistance / reGetTime;
+    //Serial.println("Velocity: ");
+    //Serial.println(velocity);
+    //Serial.println("");
   }
+
+  int reGetTime = millis() - motorOnTime;
+  double velocity = avgwheelDistance / reGetTime;
+  Serial.println("Dist: ");
+  Serial.println(avgwheelDistance);
+  Serial.println("");
+  Serial.println("Velocity: ");
+  Serial.println(velocity);
+  Serial.println("");
   
   
-  
-  Serial.print(avgwheelDistance);
-  Serial.print("\t");
+  //Serial.print(avgwheelDistance);
+  //Serial.print("\t");
   
   change_phi = wheelDistance/d;
  
   phi = phi_old + change_phi; //converts encoder counts and radius of the wheel to an angle of robot rotation
   phi_old = phi;
-  Serial.print("Angle: ");
-  Serial.println(phi);
+  //Serial.print("Angle: ");
+  //erial.println(phi);
 
 
   //md.setM1Speed();
@@ -106,4 +118,5 @@ void turn(){
     md.setM1Speed(0);
     md.setM2Speed(0);
     } //stop the robot after turn is complete
+  turnCounter = turnCounter + 1;
   }
