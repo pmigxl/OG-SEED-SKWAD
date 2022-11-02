@@ -34,7 +34,9 @@ void setup(){
 
 
 void loop() {
- turn();
+  md.setM1Speed(0);
+  md.setM2Speed(0);
+  turn();
 }
 
 
@@ -59,7 +61,7 @@ void turn(){
   double wheelTheta = (2 * 3.14159 * deltaCounts) / motor_counts;
   //Serial.print(wheelTheta);
   //Serial.print("\t");
-  double wheelDistance = (wheelTheta*r);
+  double wheelDistance = (wheelTheta * r);
   //Serial.print(wheelDistance);
   //Serial.print("\t");
  
@@ -74,13 +76,15 @@ void turn(){
   while(millis() < timer + sample_time){
     md.setM1Speed(200);
     md.setM2Speed(-200);
+    int motorOnTime = millis();
     Serial.println("Dist: ");
     Serial.println(avgwheelDistance);
     Serial.println("");
     Serial.println("Time: ");
     Serial.println(timer);
     Serial.println("");
-    double velocity = avgwheelDistance / timer;
+    int reGetTime = millis() - motorOnTime;
+    double velocity = avgwheelDistance / reGetTime;
     Serial.println("Velocity: ");
     Serial.println(velocity);
     Serial.println("");
