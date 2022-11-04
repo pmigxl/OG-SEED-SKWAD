@@ -1,0 +1,38 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+double pie = 3.14159;
+bool flag = false;
+const int motor_counts = 3200;
+const double r = 3; //radius of the wheel in inches
+
+const int sample_time = 5000;
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK, M2_DT);
+DualMC33926MotorShield md;
+
+
+double motorVar = 0;
+
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+const double Kp = 3.5;
+const double Ki = 0.01;
+
+void setup() {
+  // put your setup code here, to run once:
+  md.init();
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  md.setM1Speed(-200);
+  md.setM2Speed(200);
+}
