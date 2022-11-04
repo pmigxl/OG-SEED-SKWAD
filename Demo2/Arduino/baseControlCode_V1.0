@@ -1,0 +1,108 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+#include <Wire.h>
+
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+double pie = 3.14159;
+bool flag = false;
+const int motor_counts = 3200;
+const double r = 3; //radius of the wheel in inches
+
+const int sample_time = 5000;
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK, M2_DT);
+DualMC33926MotorShield md;
+
+//global variable declaration
+double motorVar = 0;
+
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+bool A_STATE = 0;
+bool B_STATE = 0;
+bool C_STATE = 0;
+bool D_STATE = 0;
+
+const double Kp = 0.07;  //try 3.5 from mini proj
+const double Ki = 0.0002; //try .01 from mini proj
+
+int disTarget = 0; // change this value to see motor move forward
+
+double currPos = 0;
+double currPos2 = 0;
+
+int error = 0; //integral error for i in PI controller
+int error2 = 0;
+
+int prevTime = 0; //previos time 
+int currTime = 0; //current time
+
+int startPos = 0;
+int startPos2 = 0;
+int prevPos = 0; // stores the previous position of the motor 
+int prevPos2 = 0;
+
+double pi_angle; //angle from the pi
+
+double wheelThetaStart = 0;
+double wheelDistanceStart = 0;
+double wheelThetaEnd = 0;
+double wheelDistanceEnd = 0;
+
+void setup() {
+  //PI init code
+  /*
+  Wire.begin(PI_ADDRESS);
+  Wire.onReceive(PI_READ);
+  Wire.onRequest(PI_WRITE);
+  */
+  //serial init
+  Serial.begin(115200);
+
+  //motor init code
+  md.init();
+}
+
+void loop() {
+  rotate();
+  //ALL local variable declaration
+  
+  //establishing start position of wheels
+  currPos = abs(encoderM1.read());
+  currPos2 = abs(encoderM2.read());
+
+  if (currPos != 0 || currPos2 != 0){
+    currPos = 0;
+    currPos2 = 0;
+  }
+  
+  //Serial.print("M1 location: ");
+  //Serial.println(currPos);
+  //Serial.print("M2 location: ");
+  //Serial.println(currPos2);
+  
+  //linear conversion for left motor
+  wheelThetaStart = (2 * pie * startAvg) / motor_counts;
+  wheelDistanceStart = (wheelThetaStart * r);
+
+}
+
+//this function will rotate the robot - NEEDS to be called by case statements elsewhere
+void rotateLeft(){
+  //will rotate left
+  //md.setM1Speed(200);
+  //md.setM2Speed(200);
+}
+
+void rotateRight(){
+  //will rotate right
+  md.setM1Speed(-200);
+  md.setM2Speed(-200);
+}
