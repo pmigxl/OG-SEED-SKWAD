@@ -1,0 +1,4 @@
+1. look for aruco marker - 
+2. rotate until aruco marker is in line with robot
+3. drive towards marker and stop within 1 foot
+4.  
