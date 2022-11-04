@@ -1,1 +1,48 @@
-e
+#import necessary tools 
+from cv2 import aruco
+import cv2
+import numpy as np
+import math
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
+import smbus
+import smbus2
+import board
+import adafruit_character_lcd.character_lcd_rgb_i2c as character_lcd
+
+
+# LCD and I2C info
+
+# lcd_columns = 16
+# lcd_rows = 2
+# lcd = character_lcd.Character_LCD_RGB_I2C(i2c, lcd_columns, lcd_rows)
+# lcd.clear()
+
+i2c = board.I2C()
+abus = smbus.SMBus(1)
+address = 0x2a
+slave_address = 20
+
+detect = 0
+angle = 0
+
+
+
+
+[COMP VISION CODE]
+
+
+data2send.append(double(angle))
+writePosition(data2send)
+
+
+def writePosition(value):
+  bus.write_i2c_block_data(address, 0, value)
+  return -1
+  
+def readPosition():
+  number = bus.read_byte(address)
+  return number
+
+
