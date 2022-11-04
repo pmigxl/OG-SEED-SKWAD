@@ -1,0 +1,141 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+double pie = 3.14159;
+bool flag = false;
+const int motor_counts = 3200;
+const double r = 3; //radius of the wheel in inches
+
+const int sample_time = 5000;
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK, M2_DT);
+DualMC33926MotorShield md;
+
+
+double motorVar = 200;
+
+int count;
+int timer;
+double enc1;
+double enc2;
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+void setup() {
+  Serial.begin(115200);
+  md.init();
+  Serial.print("Dist: ");
+  Serial.print("\t");
+  Serial.print("Velocity: ");
+  Serial.print("\t");
+  Serial.println("Time");
+
+ // Serial.print("Start Time: ");
+ // Serial.print("\t");
+ // Serial.println("End Time: ");
+}
+
+void loop() {
+
+  //ALL variable declaration
+  double startTime = millis();
+  double startPos1;
+  double startPos2;
+  double endPos1;
+  double endPos2;
+  double endTime;
+  double deltaTime;
+  double deltaPos;
+  double startAvg;
+  double endAvg;
+  double velocity = 0;
+  double wheelThetaStart = 0;
+  double wheelDistanceStart = 0;
+  double wheelThetaEnd = 0;
+  double wheelDistanceEnd = 0;
+  double velocityTime = 0;
+
+
+  //reading start position before movement
+  startPos1 = encoderM1.read();
+  startPos2 = -1 * encoderM2.read();
+  startAvg = (startPos2 - startPos1) / 2;
+
+  //conversion of counts to linear distance
+  wheelThetaStart = (2 * pie * startAvg) / motor_counts;
+  wheelDistanceStart = (wheelThetaStart * r);
+
+  //time loop to turn motor on after 1 second and run for 5 seconds
+  if (startTime < 1000) {
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+  } else if (startTime >= 1000 && startTime < 5000) {
+    md.setM1Speed(200);
+    md.setM2Speed(-200);
+  } else if (startTime >= 5000 || endTime >= 5000) {
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    velocity = 0;
+  }else {
+    velocity = 0;
+  }
+
+  //reading in values after motor movement
+
+  endTime = millis();
+
+  //Serial.print(startTime - endTime);
+  
+  endPos1 = encoderM1.read();
+  endPos2 = -1 * encoderM2.read();
+  endAvg = (endPos2 - endPos1) / 2;
+
+  //conversion of end counts to linear
+  wheelThetaEnd = (2 * pie * endAvg) / motor_counts;
+  wheelDistanceEnd = (wheelThetaEnd * r);
+
+
+  //velocity and time and position calculations
+  
+  if (startTime != endTime) {
+    deltaTime = (endTime - startTime) / 1000;
+  }
+  else if(startTime == endTime){
+    velocity = 0;
+    }
+  
+  if (wheelDistanceStart != wheelDistanceEnd){
+    deltaPos = wheelDistanceStart - wheelDistanceEnd; //implementation of linear conversion
+  }else {
+    //deltaPos = 0;
+  }
+ 
+  velocity = (deltaPos / deltaTime);
+  velocityTime = millis();
+
+  //print out in columns
+
+ 
+  Serial.print(wheelDistanceEnd); //linear represntation of change in encoder readings
+  Serial.print("\t");
+  Serial.print(velocity);
+  Serial.print("\t");
+  Serial.println(velocityTime);
+
+
+  //reset resued variables
+  startPos1 = endPos1;
+  startPos2 = endPos2;
+  startAvg = 0;
+  endAvg = 0;
+  //velocity = 0;
+  deltaPos = 0;
+  endTime = startTime;
+
+}
