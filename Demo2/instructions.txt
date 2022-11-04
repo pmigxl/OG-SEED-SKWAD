@@ -1,4 +1,15 @@
-1. look for aruco marker - 
-2. rotate until aruco marker is in line with robot
-3. drive towards marker and stop within 1 foot
-4.  
+TRIAL 1
+
+1. Look for aruco marker by rotating robot up to 360 degrees 
+2. Stop robot when aruco marker is found
+3. Adjust for overshoot (Line up straight with marker)
+4. Drive towards marker and stop within 1 foot
+ 
+ TRIAL 2
+ 
+1. Look for aruco marker by rotating robot up to 360 degrees 
+2. Stop robot when aruco marker is found
+3. Adjust for overshoot (Line up straight with marker)
+4. Drive towards marker 
+5. Stop so that the center of rotation of the robot lies at the marker position
+// Marker MUST be between the wheels of the robot when robot stops
