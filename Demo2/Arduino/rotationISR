@@ -1,0 +1,36 @@
+void encISRLeft(){
+  // Reads values
+  int valA = digitalRead(2);
+  int valB = digitalRead(6);
+  // Compares the values for A and B and increments accordingly
+  if((valA == valB)){
+    encCountLeft--;
+  }else{
+    encCountLeft++;
+  } 
+  // Calculates and updates wheel velocity
+  timeLeft = micros();
+  thetaLeft = encCountLeft * (PI/400.0);
+  thetaLeftdot = (encCountLeft - encCountLeftPrev) * (PI/400.0) * (1000000.0) / (timeLeft - timeLeftPrev);
+  // Updates "previous" values
+  encCountLeftPrev = encCountLeft;
+  timeLeftPrev = timeLeft;
+}
+
+void encISRRight(){
+  // Reads values
+  int valA = digitalRead(3);
+  int valB = digitalRead(5);
+  if((valA == valB)){
+    encCountRight++;
+  }else{
+    encCountRight--;
+  }
+  // Calculates and updates wheel velocity
+  timeRight = micros();
+  thetaRight = encCountRight * (PI/400.0);
+  thetaRightdot = (encCountRight - encCountRightPrev) * (PI/400.0) * (1000000.0) / (timeRight - timeRightPrev);
+  // Updates "previous" values
+  encCountRightPrev = encCountRight;
+  timeRightPrev = timeRight;
+}
