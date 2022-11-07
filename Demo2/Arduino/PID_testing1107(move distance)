@@ -1,3 +1,4 @@
+//move function with control
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
 
@@ -86,6 +87,125 @@ double computePI(double input){
   currentTime = millis();
   elapsedTime = (double)(currentTime-previousTime)/1000;
   error = setPoint - input;
+  totalError += error * elapsedTime;
+
+  double out = kp*error + ki*totalError;
+
+  lastError = error;
+  previousTime = currentTime;
+  return out;
+}
+
+----------------------------------------------------------------------------
+//turn function with control
+
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+
+double pie = 3.14159;
+bool flag;
+const int motor_counts = 3200;
+const double r = 3.0; //radius of the wheel in inches
+
+double kp = 0.25;
+double ki = 0.05;
+
+Encoder encoderM1(3, 6);
+Encoder encoderM2(2, 5);
+DualMC33926MotorShield md;
+
+
+
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+
+
+double wheelThetaStart1;
+double wheelThetaStart2;
+double wheelDistStart1;
+double wheelDistStart2;
+const int angle1_count = 1847;
+const int angle2_count = -1194;
+
+double enc1_double;
+double enc2_double;
+double enc2_OUT;
+
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double input_1,input_2,output1,output2, setPoint_1, setPoint_2;
+double totalError, rateError;
+
+
+void setup() {
+  Serial.begin(115200);
+  md.init();
+  
+}
+
+
+void loop() {
+  
+  long enc1 = encoderM1.read();
+  double wheelTheta1 = (2.0 * pie * (double)enc1) / (double)motor_counts;
+  double wheelDistance1 = (wheelTheta1 * r)/12;
+
+  
+  long enc2 = encoderM2.read() *-1;
+  setPoint_1 = angle1_count;
+  input_1 = (double)enc1;
+  output1 = compute_ang1(input_1);
+  
+  setPoint_2 = angle2_count;
+  input_2 = (double)enc2;
+  output2 = compute_ang2(input_2);
+  
+  delay(100);
+  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
+  double wheelDistance2 = (wheelTheta2 * r)/12;
+  
+  
+  
+  if(output1 <= angle1_count){
+    md.setM1Speed(200);
+    md.setM2Speed(200);
+    Serial.print(setPoint_1);
+    Serial.print("\t");
+    Serial.println(setPoint_1);
+    Serial.print("\t");
+    Serial.println(output1);
+  }
+  else if(output1 > angle1_count){
+    while(true){
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    }
+  }
+  
+}
+
+double compute_ang1(double input){
+  currentTime = millis();
+  elapsedTime = (double)(currentTime-previousTime)/1000;
+  error = angle1_count - input;
+  totalError += error * elapsedTime;
+
+  double out = kp*error + ki*totalError;
+
+  lastError = error;
+  previousTime = currentTime;
+  return out;
+}
+
+double compute_ang2(double input){
+  currentTime = millis();
+  elapsedTime = (double)(currentTime-previousTime)/1000;
+  error = angle2_count - input;
   totalError += error * elapsedTime;
 
   double out = kp*error + ki*totalError;
