@@ -6,11 +6,11 @@ bool flag;
 const int motor_counts = 3200;
 const double r = 3.0; //radius of the wheel in inches
 
-double kp = 2;
-double ki = 5;
+double kp = 0.25;
+double ki = 0.05;
 
-Encoder encoderM1(2, 5);
-Encoder encoderM2(3, 6);
+Encoder encoderM1(3, 6);
+Encoder encoderM2(2, 5);
 DualMC33926MotorShield md;
 
 
@@ -36,39 +36,37 @@ unsigned long currentTime, previousTime;
 double elapsedTime;
 double error;
 double lastError;
-double output, setPoint;
-double totError, rateError;
+double input,output, setPoint;
+double totalError, rateError;
 
 
 void setup() {
   Serial.begin(115200);
   md.init();
-  
+  setPoint = 0;
 }
 
 
 void loop() {
   
-  long enc1 = encoderM1.read() * -1;
+  long enc1 = encoderM1.read();
   double wheelTheta1 = (2.0 * pie * (double)enc1) / (double)motor_counts;
   double wheelDistance1 = (wheelTheta1 * r)/12;
 
   
-  long enc2 = encoderM2.read();
-  setPoint = (double)end1;
+  long enc2 = encoderM2.read() *-1;
+  setPoint = (double)enc1;
   input = (double)enc2;
   output = computePI(input);
   delay(100);
-
-
   double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
   double wheelDistance2 = (wheelTheta2 * r)/12;
   
   
   
   if(wheelDistance1 <= distance){
-    md.setM1Speed(200);
-    md.setM2Speed(-200);
+    md.setM1Speed(-200);
+    md.setM2Speed(200 + output);
     Serial.print(enc1);
     Serial.print("\t");
     Serial.println(wheelDistance1);
@@ -86,7 +84,7 @@ void loop() {
 
 double computePI(double input){
   currentTime = millis();
-  elapsedTime = (double)(currentTime-previousTime);
+  elapsedTime = (double)(currentTime-previousTime)/1000;
   error = setPoint - input;
   totalError += error * elapsedTime;
 
