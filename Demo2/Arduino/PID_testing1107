@@ -93,6 +93,6 @@ double computePI(double input){
   double out = kp*error + ki*totalError;
 
   lastError = error;
-  previousTime = 
+  previousTime = currentTime;
   return out;
 }
