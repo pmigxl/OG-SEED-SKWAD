@@ -19,3 +19,5 @@ MiniProject: Contains Arduino and Pi code which rotates a motor based on vision 
 Misc: Contains various iterations of code from MiniProject
 
 TesterCode: Contains basic code examples used for testing hardware
+
+encoderTesting: Contains code capable of measuring encoder counts 
