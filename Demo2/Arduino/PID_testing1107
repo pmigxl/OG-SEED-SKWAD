@@ -1,5 +1,3 @@
-//#include <PID_v1.h>
-
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
 
@@ -8,6 +6,8 @@ bool flag;
 const int motor_counts = 3200;
 const double r = 3.0; //radius of the wheel in inches
 
+double kp = 2;
+double ki = 5;
 
 Encoder encoderM1(2, 5);
 Encoder encoderM2(3, 6);
@@ -32,13 +32,18 @@ double enc1_double;
 double enc2_double;
 double enc2_OUT;
 
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double output, setPoint;
+double totError, rateError;
 
-//PID enc2_PID(&enc2_double,&enc2_OUT,&enc1_double,0.078,0.00002909,0,DIRECT);
 
 void setup() {
   Serial.begin(115200);
   md.init();
-  //enc2_PID.SetMode(AUTOMATIC);
+  
 }
 
 
@@ -50,13 +55,17 @@ void loop() {
 
   
   long enc2 = encoderM2.read();
+  setPoint = (double)end1;
+  input = (double)enc2;
+  output = computePI(input);
+  delay(100);
+
+
   double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
   double wheelDistance2 = (wheelTheta2 * r)/12;
-  //enc1_double = (double)enc1;
-  //enc2_double = (double)enc2;
   
-  //enc2_PID.Compute();
-  //enc2 = (long)enc2_OUT;
+  
+  
   if(wheelDistance1 <= distance){
     md.setM1Speed(200);
     md.setM2Speed(-200);
@@ -73,4 +82,17 @@ void loop() {
     }
   }
   
+}
+
+double computePI(double input){
+  currentTime = millis();
+  elapsedTime = (double)(currentTime-previousTime);
+  error = setPoint - input;
+  totalError += error * elapsedTime;
+
+  double out = kp*error + ki*totalError;
+
+  lastError = error;
+  previousTime = 
+  return out;
 }
