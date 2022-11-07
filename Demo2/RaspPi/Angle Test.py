@@ -2,10 +2,17 @@ from cv2 import aruco
 import cv2
 import numpy as np
 import math
+import smbus
 
 angle = 0.0 
-
+dist = 0.0
+detect = 0.0
 marker_size = 32
+
+abus = smbus.SMBus(1)
+address = 0x2a
+slave_address = 0x20
+
 
 with open ('camera_cal1.npy', 'rb') as f:
     camera_matrix = np.load(f)
@@ -18,6 +25,25 @@ cap = cv2.VideoCapture(0)
 camera_width = 1280
 camera_height = 960
 camera_frame_rate = 20
+
+def writeNumber(comDetect, comAngle, comDist):
+   
+    try:
+        abus.write_byte(address,comDetect)
+    except:
+        print('io error')
+    try:
+        abus.write_byte(address,comAngle)
+    except:
+        print('io error')
+    try:
+        abus.write_byte(address,comDist)
+    except:
+        print('io error')
+    
+    
+    
+    return -1
 
 #until q is pressed, images will continously be taken, converted to greyscale, and if an ID is detected the math preformed and displayed to calculate the angle 
 while True:
@@ -76,6 +102,8 @@ while True:
                     anglePrint = str(angle) + ' degrees '
                     distPrint = str(dist) + ' feet'
                     printt = anglePrint + distPrint
+                    
+                    
                     # Use pixel manipulation to determine quadrants
                     
                     # Display the ID's and angle to video feed
@@ -99,8 +127,10 @@ while True:
                 #cv2.putText(grey, anglePrint, (topRight[0], topRight[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
                 cv2.putText(frame, printt, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
                 #cv2.putText(frame, tvec_str, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
-   
+    if ids is None:
+        detect = 0
         
+    writeNumber(detect, angle, dist)   
     cv2.imshow("frame", frame)
     key = cv2.waitKey(1) & 0xFF
     if key == ord('q'):
