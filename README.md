@@ -14,6 +14,9 @@
 
 Demo1: Contains Arduino and Pi code which rotates the robot by a specified angle in degrees and moves it forward a specified distance in feet
 
+Demo2: Contains Arduino and Pi code which rotates the robot to find the marker, has it drive to the marker, and stop so that the center of
+rotation of the robot lies at the marker position
+
 MiniProject: Contains Arduino and Pi code which rotates a motor based on vision inputs
 
 Misc: Contains various iterations of code from MiniProject
