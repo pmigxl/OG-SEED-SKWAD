@@ -31,15 +31,15 @@ def writeNumber(comDetect, comAngle, comDist):
     try:
         abus.write_byte(address,comDetect)
     except:
-        print('io error')
+        print('Detect io error')
     try:
         abus.write_byte(address,comAngle)
     except:
-        print('io error')
+        print('Angle io error')
     try:
         abus.write_byte(address,comDist)
     except:
-        print('io error')
+        print('Distance io error')
     
     
     
