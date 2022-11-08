@@ -1,0 +1,168 @@
+//turn function with control
+
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+#include <math.h>
+
+double pie = 3.14159;
+bool flag;
+const long motor_counts = 3200;
+const double r = 3.0; //radius of the wheel in inches
+
+double kp = 0.25;
+double ki = 0.05;
+
+Encoder encoderM1(3, 6);
+Encoder encoderM2(2, 5);
+DualMC33926MotorShield md;
+
+const int M1_PIN_CLK = 3;
+const int M1_PIN_DT = 6;
+const int M2_PIN_CLK = 2;
+const int M2_PIN_DT = 5;
+
+bool A_CURRENT_STATE_LEFT = 0;
+bool B_CURRENT_STATE_LEFT = 0;
+bool A_CURRENT_STATE_RIGHT = 0;
+bool B_CURRENT_STATE_RIGHT = 0;
+
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+int currTime = 0;
+int prevTime = 0;
+int count = 0;
+int countRight = 0;
+
+
+double wheelThetaStart1;
+double wheelThetaStart2;
+double wheelDistStart1;
+double wheelDistStart2;
+double motor1Val = 0;
+double motor2Val = 0;
+
+double wheel1curpos = 0;
+double wheel2curpos = 0;
+double prevwheel1pos = 0;
+double prevwheel2pos = 0;
+double target = 6; //inches
+
+double curpos = 0;
+//const int angle1_count = 3300;
+//const int angle2_count = -3300;
+
+
+int desired_angle = 180;
+const long angle1_count = (desired_angle * motor_counts ) / 360 ;
+const long angle2_count = ((desired_angle *  motor_counts ) / 360);
+
+
+double enc1_double;
+double enc2_double;
+double enc2_OUT;
+
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double input_1, input_2, output1, output2, setPoint_1, setPoint_2;
+double totalError, rateError;
+double intError1 = 0;
+double intError2 = 0;
+
+
+void setup() {
+  pinMode(M1_PIN_CLK, INPUT);
+  pinMode(M1_PIN_DT, INPUT);
+  pinMode(M2_PIN_CLK, INPUT);
+  pinMode(M2_PIN_DT, INPUT);
+
+  Serial.begin(115200);
+
+  attachInterrupt(digitalPinToInterrupt(M1_PIN_CLK), LeftTick, CHANGE); 
+  attachInterrupt(digitalPinToInterrupt(M2_PIN_CLK), RightTick, CHANGE);
+  
+  md.init();
+
+}
+
+
+void loop() {
+
+  long enc1 = encoderM1.read();
+  long enc2 = encoderM2.read() * -1;
+  long deltaCounts = (enc1 - enc2) / 2;
+  double wheelTheta1 = (2.0 * pie * enc1) / (double)motor_counts;
+  double wheel1curpos = (wheelTheta1 * r) / 12;
+
+  double wheelTheta2 = (2.0 * pie * enc2) / (double)motor_counts;
+  double wheel2curpos = (wheelTheta2 * r) / 12;
+
+
+
+  currTime = millis();
+  if (currTime >= prevTime + 100) {
+    intError1 += (wheel1curpos - target);
+    intError2 += (wheel2curpos - target);
+
+    prevwheel1pos = wheel1curpos;
+    prevwheel2pos = wheel2curpos;
+
+    motor1Val = ( target - wheel1curpos) * kp + (ki * double(intError1));
+    motor2Val = ( target - wheel2curpos) * kp + (ki * double(intError2));
+
+    md.setM1Speed( motor1Val);
+    md.setM2Speed( motor2Val);
+
+  }
+
+delay(100);
+
+
+
+
+}
+
+void LeftTick() {
+
+  if ( count >= 3200) {
+    count = 0;
+  }
+
+A_CURRENT_STATE_RIGHT = digitalRead(M1_PIN_CLK); 
+B_CURRENT_STATE_RIGHT = digitalRead(M1_PIN_DT); 
+  
+  if (A_CURRENT_STATE_RIGHT==B_CURRENT_STATE_RIGHT){ 
+
+    countRight+=1;
+  }
+  else {
+    countRight-=1;
+  }
+
+}
+
+
+void RightTick() {
+
+  if ( countRight >= 3200 ) {
+
+    countRight = 0;
+  }
+ 
+
+  A_CURRENT_STATE_RIGHT = digitalRead(M2_PIN_CLK); 
+  B_CURRENT_STATE_RIGHT = digitalRead(M2_PIN_DT); 
+  
+  if (A_CURRENT_STATE_RIGHT==B_CURRENT_STATE_RIGHT){ 
+
+    countRight+=1;
+  }
+  else {
+    countRight-=1;
+  }
+
+}
