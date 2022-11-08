@@ -28,8 +28,13 @@ double wheelThetaStart1;
 double wheelThetaStart2;
 double wheelDistStart1;
 double wheelDistStart2;
-const int angle1_count = 1847;
-const int angle2_count = -1194;
+#const int angle1_count = 3300;
+#const int angle2_count = -3300;
+
+
+int desired_angle = 360
+int angle1_count = ((desired_angle/motor_counts)*360)/2
+int angle2_count = -1 * ((desired_angle/motor_counts)*360)/2
 
 double enc1_double;
 double enc2_double;
@@ -81,7 +86,21 @@ void loop() {
     Serial.print("\t");
     Serial.println(output1);
   }
-  else if(output1 > angle1_count){
+  if(output2 <= angle2_count){
+    md.setM1Speed(-200);
+    md.setM2Speed(-200);
+    Serial.print(setPoint_2);
+    Serial.print("\t");
+    Serial.println(setPoint_2);
+    Serial.print("\t");
+    Serial.println(output2);
+  }
+  else if(output2 > angle2_count){
+    while(true){
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    }
+  else (output1 > angle1_count){
     while(true){
     md.setM1Speed(0);
     md.setM2Speed(0);
