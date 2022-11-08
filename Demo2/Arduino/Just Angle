@@ -100,7 +100,7 @@ void loop() {
     md.setM1Speed(0);
     md.setM2Speed(0);
     }
-  else (output1 > angle1_count){
+  else if(output1 > angle1_count){
     while(true){
     md.setM1Speed(0);
     md.setM2Speed(0);
