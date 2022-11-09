@@ -1,6 +1,8 @@
 #include <Encoder.h>
 #include <DualMC33926MotorShield.h>
 #include <Wire.h>
+const double kp = 0.3;
+const double ki = 0.1;
 
 const int M1_CLK = 2;
 const int M1_DT = 5;
@@ -12,7 +14,7 @@ const int motor_counts = 3200;
 const double r = 3; //radius of the wheel in inches
 
 const int sample_time = 5000;
-
+double elapsedTime;
 Encoder encoderM1(M1_CLK, M1_DT);
 Encoder encoderM2(M2_CLK, M2_DT);
 DualMC33926MotorShield md;
@@ -57,10 +59,9 @@ double wheelDistanceEnd = 0;
 
 //Matt's PID controller
 unsigned long currentTime, previousTime;
-double elapsedTime;
 double error;
 double lastError;
-double input, output, setPoint;
+double input, output1, output2, setPoint1, setPoint2;
 double totalError, rateError;
 
 // Stores encoder counts for both wheels
@@ -90,6 +91,8 @@ double currentAng = 0;
 double cpd1 = 19.08;
 double cpd2 = -13.53;
 
+
+
 void setup() {
   //serial init
   Serial.begin(115200);
@@ -108,6 +111,7 @@ void setup() {
 }
 
 void loop() {
+
   // put your main code here, to run repeatedly:
   rotateDAWG();
 
@@ -127,7 +131,7 @@ void loop() {
 }
 
 void rotateDAWG() {
-  startPos = encoderM1.read();
+  startPos = abs(encoderM1.read());
   startPos2 = encoderM2.read();
   /*
     if (startPos - angle1_count <= 1 && startPos - angle1_count >= -1) {
@@ -148,22 +152,16 @@ void rotateDAWG() {
   Serial.println("desired move: ");
   Serial.print(desiredMove);
 
+  if (startPos < desiredMove) { // 10th of a second
+    output1 = computeLeft(startPos);
+  }
+  else if (startPos2 < desiredMove2) {
+    output2 = computeRight(startPos2);
+    md.setM1Speed(output1);
+    md.setM2Speed(output2);
+  }
 
-  currentTime = millis();
-  if ((startPos < desiredMove) && (startPos > desiredMove2)) { // 10th of a second
-    Serial.println("start pos: ");
-    Serial.println(startPos);
-    Serial.println("desired move: ");
-    Serial.println(desiredMove);
-    error += (startPos - angle1_count);
-    prevPos = startPos;
-    previousTime = currentTime;
-    //motorVar = double((angle1_count - startPos)) * Kp + (Ki * double(error)); //calculate the motor movement
-    md.setM1Speed(200);
-    md.setM2Speed(200);
-
-
-  } else {
+  else {
     md.setM1Speed(0);
     md.setM2Speed(0);
     Serial.println("IM STOPPING");
@@ -217,3 +215,28 @@ void encISRRight() {
   timeRightPrev = timeRight;
 }
 
+
+double computeLeft(double input) {
+  currentTime = millis();
+  elapsedTime = (double)(currentTime - previousTime) / 1000;
+  error = setPoint1 - input;
+  totalError += error * elapsedTime;
+
+  double out = kp * error + ki * totalError;
+
+  lastError = error;
+  previousTime = currentTime;
+  return out;
+}
+double computeRight(double input) {
+  currentTime = millis();
+  elapsedTime = (double)(currentTime - previousTime) / 1000;
+  error = setPoint2 - input;
+  totalError += error * elapsedTime;
+
+  double out = kp * error + ki * totalError;
+
+  lastError = error;
+  previousTime = currentTime;
+  return out;
+}
