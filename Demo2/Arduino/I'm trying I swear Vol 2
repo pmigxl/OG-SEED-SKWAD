@@ -1,0 +1,194 @@
+//turn function with control
+
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+#include <math.h>
+
+double pie = 3.14159;
+bool flag;
+const long motor_counts = 3200;
+const double r = 3.0; //radius of the wheel in inches
+
+double kp = 0.25;
+double ki = 0.05;
+
+Encoder encoderM1(3, 6);
+Encoder encoderM2(2, 5);
+DualMC33926MotorShield md;
+
+const int M1_PIN_CLK = 3;
+const int M1_PIN_DT = 6;
+const int M2_PIN_CLK = 2;
+const int M2_PIN_DT = 5;
+
+bool A_CURRENT_STATE_LEFT = 0;
+bool B_CURRENT_STATE_LEFT = 0;
+bool A_CURRENT_STATE_RIGHT = 0;
+bool B_CURRENT_STATE_RIGHT = 0;
+
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+int currTime = 0;
+int prevTime = 0;
+int count = 0;
+int countRight = 0;
+long enc1 = 0;
+long enc2 = 0;
+long oldenc1 = 0;
+long oldenc2 = 0;
+
+long enc1deltaCounts = 0;
+long enc2deltaCounts = 0;
+double wheelTheta1 = 0;
+double wheelTheta2 = 0;
+double wheelcurpos1 = 0;
+double wheelcurpos2 = 0;
+double prevwheelpos1 = 0;
+double prevwheelpos2 = 0; 
+
+double wheelThetaStart1;
+double wheelThetaStart2;
+double wheelDistStart1;
+double wheelDistStart2;
+double motor1Val = 0;
+double motor2Val = 0;
+
+
+double target = 6; //inches
+
+double curpos = 0;
+//const int angle1_count = 3300;
+//const int angle2_count = -3300;
+
+
+int desired_angle = 180;
+const long angle1_count = (desired_angle * motor_counts ) / 360 ;
+const long angle2_count = ((desired_angle *  motor_counts ) / 360);
+
+
+double enc1_double;
+double enc2_double;
+double enc2_OUT;
+
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double input_1, input_2, output1, output2, setPoint_1, setPoint_2;
+double totalError, rateError;
+double intError1 = 0;
+double intError2 = 0;
+
+
+void setup() {
+  pinMode(M1_PIN_CLK, INPUT);
+  pinMode(M1_PIN_DT, INPUT);
+  pinMode(M2_PIN_CLK, INPUT);
+  pinMode(M2_PIN_DT, INPUT);
+
+  Serial.begin(115200);
+
+  attachInterrupt(digitalPinToInterrupt(M1_PIN_CLK), LeftTick, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(M2_PIN_CLK), RightTick, CHANGE);
+
+  md.init();
+
+}
+
+
+void loop() {
+
+  enc1 = encoderM1.read() * -1;
+  delay (10);
+  oldenc1 = encoderM1.read() * -1;
+  enc2 = encoderM2.read() ;
+  delay (10);
+  oldenc2 = encoderM2.read();
+  
+  enc1deltaCounts = (enc1 - oldenc1) / 2;
+  enc2deltaCounts = (enc2 - oldenc2) / 2; 
+  wheelTheta1 = (2.0 * pie * enc1deltaCounts) / motor_counts;
+  wheelcurpos1 = (wheelTheta1 * r) / 12;
+
+  wheelTheta2 = (2.0 * pie * enc2deltaCounts) / motor_counts;
+  wheelcurpos2 = (wheelTheta2 * r) / 12;
+
+
+
+  currTime = millis();
+  if (currTime >= prevTime + 100) {
+    intError1 += (target - wheelcurpos1);
+    intError2 += (target - wheelcurpos2);
+
+    prevwheelpos1 = wheelcurpos1;
+    prevwheelpos2 = wheelcurpos2;
+    Serial.println(wheelcurpos1);
+    Serial.println("\t");
+    Serial.println(wheelcurpos2);
+    Serial.println("\t");
+    Serial.println(target);
+    Serial.println("\t");
+
+    motor1Val = intError1 * kp + (ki * intError1);
+    motor2Val = intError2 * kp + (ki * intError2);
+
+    md.setM1Speed( -1 *motor1Val);
+    md.setM2Speed(  motor2Val);
+    
+     
+
+    if ((((wheelcurpos1 - target) <= .2 && ((wheelcurpos1 - target) >= -.2)) && (((wheelcurpos2 - target) <= .2 && ((wheelcurpos2 - target) >= -.2))))) {
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+    }
+  }
+
+delay(20);
+
+
+
+}
+
+void LeftTick() {
+
+  if ( count >= 3200) {
+    count = 0;
+  }
+
+  A_CURRENT_STATE_RIGHT = digitalRead(M1_PIN_CLK);
+  B_CURRENT_STATE_RIGHT = digitalRead(M1_PIN_DT);
+
+  if (A_CURRENT_STATE_RIGHT == B_CURRENT_STATE_RIGHT) {
+
+    countRight += 1;
+  }
+  else {
+    countRight -= 1;
+  }
+
+}
+
+
+void RightTick() {
+
+  if ( countRight >= 3200 ) {
+
+    countRight = 0;
+  }
+
+
+  A_CURRENT_STATE_RIGHT = digitalRead(M2_PIN_CLK);
+  B_CURRENT_STATE_RIGHT = digitalRead(M2_PIN_DT);
+
+  if (A_CURRENT_STATE_RIGHT == B_CURRENT_STATE_RIGHT) {
+
+    countRight += 1;
+  }
+  else {
+    countRight -= 1;
+  }
+
+}
