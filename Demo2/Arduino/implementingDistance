@@ -1,0 +1,238 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+#include <Wire.h>
+
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+double pie = 3.14159;
+bool flag = false;
+const int motor_counts = 3200;
+const double r = 3; //radius of the wheel in inches
+
+const int sample_time = 5000;
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK, M2_DT);
+DualMC33926MotorShield md;
+
+//global variable declaration
+double motorVar = 0;
+
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+bool A_STATE = 0;
+bool B_STATE = 0;
+bool C_STATE = 0;
+bool D_STATE = 0;
+
+const double kp = 0.25;  
+const double ki = 0.05; 
+
+int disTarget = 0; // change this value to see motor move forward
+
+long currPos = 0;
+long currPos2 = 0;
+
+//int error = 0; //integral error for i in PI controller
+int error2 = 0;
+
+int prevTime = 0; //previos time 
+int currTime = 0; //current time
+
+int startPos = 0;
+int startPos2 = 0;
+int prevPos = 0; // stores the previous position of the motor 
+int prevPos2 = 0;
+
+double angle; //angle from the pi
+
+double wheelThetaStart = 0;
+double wheelDistanceStart = 0;
+double wheelThetaEnd = 0;
+double wheelDistanceEnd = 0;
+
+//Matt's PID controller
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double input,output, setPoint;
+double totalError, rateError;
+
+double distance = 6.0 - 0.305;
+
+void setup() {
+    //serial init
+  Serial.begin(115200);
+  
+  pinMode(M1_CLK, INPUT);
+  pinMode(M1_DT, INPUT);
+  pinMode(M2_CLK, INPUT);
+  pinMode(M2_DT, INPUT);
+  pinMode(12,INPUT);
+  pinMode(13, OUTPUT);
+  
+  // interrupt handler
+  //attachInterrupt(digitalPinToInterrupt(2), TICK, CHANGE); 
+  //attachInterrupt(digitalPinToInterrupt(3), TICK, CHANGE); 
+  
+  //PI init code
+  /*
+  Wire.begin(PI_ADDRESS);
+  Wire.onReceive(PI_READ);
+  Wire.onRequest(PI_WRITE);
+  */
+  
+  //motor init code
+  md.init();
+}
+
+void loop() {
+  
+  //ALL local variable declaration
+  
+  //establishing start position of wheels
+  currPos = abs(encoderM1.read());
+  currPos2 = abs(encoderM2.read());
+
+  if (currPos != 0 || currPos2 != 0){
+    currPos = 0;
+    currPos2 = 0;
+  }
+
+  //linear conversion for left motor
+  wheelThetaStart = (2 * pie * (startPos2 - startPos)) / motor_counts;
+  wheelDistanceStart = (wheelThetaStart * r);
+
+}
+
+void mvmt(){
+  long enc1 = encoderM1.read();
+  double wheelTheta1 = (2.0 * pie * (double)enc1) / (double)motor_counts;
+  double wheelDistance1 = (wheelTheta1 * r)/12;
+
+  
+  long enc2 = encoderM2.read() *-1;
+  setPoint = (double)enc1;
+  input = (double)enc2;
+  output = computePI(input);
+  delay(100);
+  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
+  double wheelDistance2 = (wheelTheta2 * r)/12;
+  
+  
+  
+  if(wheelDistance1 <= distance){
+    md.setM1Speed(-200);
+    md.setM2Speed(200 + output);
+    
+  }
+  else if(wheelDistance1 > distance){
+    while(true){
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    }
+  }
+}
+
+//this function will rotate the robot - NEEDS to be called by case statements elsewhere
+void rotateLeft(int angle){
+  //will rotate left
+  if (angle > 0){
+     md.setM1Speed(100);
+     md.setM2Speed(100);
+  } else {
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+  }
+}
+
+void rotateRight(int angle){
+  //will rotate right
+  if (angle < 0){
+    md.setM1Speed(-100);
+    md.setM2Speed(-100);
+  }else {
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+  }
+}
+
+void stopMoving(){
+  //set everything to zero
+  md.setM1Speed(0);
+  md.setM2Speed(0);
+  currPos = 0;
+  currPos2 = 0;
+  wheelThetaStart = 0;
+  wheelDistanceStart = 0;
+  wheelThetaEnd = 0;
+  wheelDistanceEnd = 0;
+}
+
+//PI functions
+void PI_READ(int byteCount) {  //imported from mini proj -- not updated
+  int data = 0;
+  data = Wire.read(); // receive a byte as char
+  
+  }
+  
+/*
+void PI_WRITE() { // imported from mini proj -- not updated
+
+    if ( currentPos < 0 ) {
+      currentPos = 360 + currentPos;
+    }
+    
+    String myNum = String(currentPos);
+    int string_length = myNum.length() + 1;
+    char charArray[string_length];
+    myNum.toCharArray(charArray, string_length);
+    Wire.write(charArray[index]);
+    ++index;
+    if (index >= 3) {
+         index = 0;
+    }
+}
+*/
+
+double computePI(double input){
+  currentTime = millis();
+  elapsedTime = (double)(currentTime-previousTime)/1000;
+  error = setPoint - input;
+  totalError += error * elapsedTime;
+
+  double out = kp*error + ki*totalError;
+
+  lastError = error;
+  previousTime = currentTime;
+  return out;
+}
+
+/*
+void TICK() {
+
+  if ( cnt >= 1600 ) {
+    cnt = 0;
+  }
+
+  A_STATE = digitalRead(M1_CLK); //read current state of signal A
+  B_STATE = digitalRead(M1_DT); //read current state of signal B
+  C_STATE = digitalRead(M2_CLK); //read current state of signal C
+  D_STATE = digitalRead(M2_DT); //read current state of signal D
+  
+  if (A_STATE == B_STATE){
+    cnt -= 1;
+  }
+  else {
+    cnt += 1;
+  }
+   
+}
+*/
+
