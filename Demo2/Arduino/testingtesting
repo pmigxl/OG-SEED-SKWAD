@@ -1,0 +1,219 @@
+#include <Encoder.h>
+#include <DualMC33926MotorShield.h>
+#include <Wire.h>
+
+const int M1_CLK = 2;
+const int M1_DT = 5;
+const int M2_CLK = 3;
+const int M2_DT = 6;
+double pie = 3.14159;
+bool flag = false;
+const int motor_counts = 3200;
+const double r = 3; //radius of the wheel in inches
+
+const int sample_time = 5000;
+
+Encoder encoderM1(M1_CLK, M1_DT);
+Encoder encoderM2(M2_CLK, M2_DT);
+DualMC33926MotorShield md;
+
+//global variable declaration
+double motorVar = 0;
+
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+bool A_STATE = 0;
+bool B_STATE = 0;
+bool C_STATE = 0;
+bool D_STATE = 0;
+
+const double Kp = 0.1;
+const double Ki = 0.05;
+
+int disTarget = 0; // change this value to see motor move forward
+
+long currPos = 0;
+long currPos2 = 0;
+
+int error2 = 0;
+
+int prevTime = 0; //previous time
+int currTime = 0; //current time
+
+int startPos = 0;
+int startPos2 = 0;
+int prevPos = 0; // stores the previous position of the motor
+int prevPos2 = 0;
+
+double angle; //angle from the pi
+
+double wheelThetaStart = 0;
+double wheelDistanceStart = 0;
+double wheelThetaEnd = 0;
+double wheelDistanceEnd = 0;
+
+//Matt's PID controller
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double input, output, setPoint;
+double totalError, rateError;
+
+// Stores encoder counts for both wheels
+int   encCountLeft      = 0;
+int   encCountRight     = 0;
+int   encCountLeftPrev  = 0;
+int   encCountRightPrev = 0;
+
+// Stores times between encoder counts for both wheels
+unsigned long timeLeft      = 0;
+unsigned long timeLeftPrev  = 0;
+unsigned long timeRight     = 0;
+unsigned long timeRightPrev = 0;
+
+// Angle (theta) values for the wheels
+float thetaLeft     = 0;
+float thetaRight    = 0;
+float thetaLeftdot  = 0;
+float thetaRightdot = 0;
+
+int desired_angle = 90;
+int angle1_count = ((desired_angle / motor_counts) * 360) / 2;
+int angle2_count = -1 * ((desired_angle / motor_counts) * 360) / 2;
+
+double currentAng = 0;
+
+double cpd1 = 19.08;
+double cpd2 = -13.53;
+
+void setup() {
+  //serial init
+  Serial.begin(115200);
+  md.init();
+
+  pinMode(M1_CLK, INPUT);
+  pinMode(M1_DT, INPUT);
+  pinMode(M2_CLK, INPUT);
+  pinMode(M2_DT, INPUT);
+  pinMode(12, INPUT);
+  pinMode(13, OUTPUT);
+
+  attachInterrupt(digitalPinToInterrupt(2), encISRLeft, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(3), encISRRight, CHANGE);
+
+}
+
+void loop() {
+  // put your main code here, to run repeatedly:
+  rotateDAWG();
+
+  //stopRobot();
+
+
+  /*
+    if (currentTime >= previousTime + 100){ // 10th of a second
+     error += (startPos2 - desired_angle);
+     prevPos2 = startPos2;
+     previousTime = currentTime;
+     motorVar = double(( desired_angle - startPos2 )) * Kp + (Ki * double(error)); //calculate the motor movement
+     md.setM1Speed(motorVar);
+     md.setM2Speed(motorVar);
+    }
+  */
+}
+
+void rotateDAWG() {
+  startPos = encoderM1.read();
+  startPos2 = encoderM2.read();
+  /*
+    if (startPos - angle1_count <= 1 && startPos - angle1_count >= -1) {
+      startPos = angle1_count;
+      error = 0;
+    }
+
+    if (startPos2 - angle2_count <= 1 && startPos2 - angle2_count >= -1) {
+      startPos2 = angle2_count;
+      error = 0;
+    }
+  */
+  double desiredMove = cpd1 * desired_angle;
+  double desiredMove2 = cpd2 * desired_angle;
+
+  Serial.println("start pos: ");
+  Serial.print(startPos);
+  Serial.println("desired move: ");
+  Serial.print(desiredMove);
+
+
+  currentTime = millis();
+  if ((startPos < desiredMove) && (startPos > desiredMove2)) { // 10th of a second
+    Serial.println("start pos: ");
+    Serial.println(startPos);
+    Serial.println("desired move: ");
+    Serial.println(desiredMove);
+    error += (startPos - angle1_count);
+    prevPos = startPos;
+    previousTime = currentTime;
+    //motorVar = double((angle1_count - startPos)) * Kp + (Ki * double(error)); //calculate the motor movement
+    md.setM1Speed(200);
+    md.setM2Speed(200);
+
+
+  } else {
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    Serial.println("IM STOPPING");
+  }
+}
+
+void stopRobot() {
+  encCountRight = 0;
+  encCountLeft  = 0;
+  encCountRightPrev = 0;
+  encCountLeftPrev  = 0;
+
+  md.setM1Speed(0);
+  md.setM2Speed(0);
+}
+
+void encISRLeft() {
+  // Reads values
+  int valA = digitalRead(2);
+  int valB = digitalRead(5);
+  // Compares the values for A and B and increments accordingly
+  if ((valA == valB)) {
+    encCountLeft--;
+  } else {
+    encCountLeft++;
+  }
+  // Calculates and updates wheel velocity
+  timeLeft = micros();
+  thetaLeft = encCountLeft * (PI / 400.0);
+  thetaLeftdot = (encCountLeft - encCountLeftPrev) * (PI / 400.0) * (1000000.0) / (timeLeft - timeLeftPrev);
+  // Updates "previous" values
+  encCountLeftPrev = encCountLeft;
+  timeLeftPrev = timeLeft;
+}
+
+void encISRRight() {
+  // Reads values
+  int valA = digitalRead(3);
+  int valB = digitalRead(6);
+  if ((valA == valB)) {
+    encCountRight++;
+  } else {
+    encCountRight--;
+  }
+  // Calculates and updates wheel velocity
+  timeRight = micros();
+  thetaRight = encCountRight * (PI / 400.0);
+  thetaRightdot = (encCountRight - encCountRightPrev) * (PI / 400.0) * (1000000.0) / (timeRight - timeRightPrev);
+  // Updates "previous" values
+  encCountRightPrev = encCountRight;
+  timeRightPrev = timeRight;
+}
+
