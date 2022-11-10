@@ -249,9 +249,15 @@ void PI_WRITE() {
 }
 */
 
+
 void hardReset(){
   //set all changing variables for movement to zero
-  
+  turnFlag = false;
+  driveFlag = false;
+  deg = 0;
+  distance = 0;
+  md.setM1Speed(0);
+  md.setM2Speed(0);
+  readAngle = 0;
 }
-
 
