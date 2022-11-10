@@ -11,8 +11,8 @@ const double r = 3.0; //radius of the wheel in inches
 double kp_drive = 0.30;
 double ki_drive = 0.1;
 
-double kp_angle = 0.40;//was .3
-double ki_angle = 0.3;//was .2
+double kp_angle = 0.40;
+double ki_angle = 0.3;
 
 Encoder encoderM1(3, 6);
 Encoder encoderM2(2, 5);
