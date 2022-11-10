@@ -26,7 +26,7 @@ double wheelThetaStart1;
 double wheelThetaStart2;
 double wheelDistStart1;
 double wheelDistStart2;
-double deg = -90;
+double deg = 360;
 double diameter = .9; // feet
 double distance = 3.141*diameter*deg/360;
 
@@ -66,9 +66,17 @@ void loop() {
   double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
   double wheelDistance2 = (wheelTheta2 * r)/12;
   
-  
-  
-  if(wheelDistance1 <= distance){
+  if((wheelDistance1 < distance)&&(wheelDistance2 < distance)){
+    if(deg >= 0){
+    md.setM1Speed(100);
+    md.setM2Speed(100 + output);
+    Serial.print(enc1);
+    Serial.print("\t");
+    Serial.print(wheelDistance1);
+    Serial.print("\t");
+    Serial.println(wheelDistance2);
+    }
+    if(deg < 0){
     md.setM1Speed(-100);
     md.setM2Speed(-100 + output);
     Serial.print(enc1);
@@ -76,17 +84,19 @@ void loop() {
     Serial.print(wheelDistance1);
     Serial.print("\t");
     Serial.println(wheelDistance2);
+    }
   }
-  else if(wheelDistance1 > distance){
-    md.setM1Speed(100);
-    md.setM2Speed(-100 + output);
-    Serial.print(enc1);
-    Serial.print("\t");
-    Serial.print(wheelDistance1);
-    Serial.print("\t");
-    Serial.println(wheelDistance2);
-  }
-  else{
+  
+//  else if((wheelDistance1 < distance)&&(wheelDistance2 < distance)){
+//    md.setM1Speed(100);
+//    md.setM2Speed(100 + output);
+//    Serial.print(enc1);
+//    Serial.print("\t");
+//    Serial.print(wheelDistance1);
+//    Serial.print("\t");
+//    Serial.println(wheelDistance2);
+//  }
+  else if((wheelDistance1 >= distance)||(wheelDistance2 >= distance)){
     while(true){
     md.setM1Speed(0);
     md.setM2Speed(0);
@@ -111,4 +121,3 @@ double computePI(double input){
   previousTime = currentTime;
   return out;
 }
-
