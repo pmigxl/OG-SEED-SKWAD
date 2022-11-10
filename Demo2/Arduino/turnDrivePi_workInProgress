@@ -50,7 +50,8 @@ double input, output, setPoint, inputDrive, outputDrive, setPointDrive;
 double totalErrorTurn, totalErrorDrive, rateError;
 
 bool driveFlag = false;
-bool turnFlag = false;
+bool turnRightFlag = false;
+bool turnLeftFlag = false;
 
 //RASP PI SHIII
 bool reading = 0;
@@ -84,9 +85,9 @@ void setup() {
 
 void loop() {
   
-  /*turnFlag = true;
-  while (turnFlag == true) {
-    turn(deg);
+  /*turnRightFlag = true;
+  while (turnRightFlag == true) {
+    turnRight(deg);
   }
   driveFlag = true;
   while(driveFlag == true){
@@ -161,8 +162,8 @@ void drive(int dist) {
   }
 }
 
-//turn function
-void turn(double dataAngle) { //need to duplicate for the other direction??
+//turn Right function
+void turnRight(double dataAngle) { //need to duplicate for the other direction??
   double targetAngle = 3.141*diameter*dataAngle/360;
 
   long enc1T = encoderM1.read();
@@ -187,6 +188,38 @@ void turn(double dataAngle) { //need to duplicate for the other direction??
     md.setM2Speed(0); 
     }
     turnFlag = false;
+    Serial.println("changing turnFlag");
+    driveFlag = true;
+
+  }
+}
+
+//turn left function
+void turnLeft(double dataAngle) { //need to duplicate for the other direction??
+  double targetAngle = 3.141*diameter*dataAngle/360;
+
+  long enc1T = encoderM1.read();
+  double wheelTheta1 = (2.0 * pie * (double)enc1T) / (double)motor_counts;
+  double wheelDistance1T = (wheelTheta1 * r) / 12;
+
+  long enc2T = encoderM2.read() * -1;
+  setPoint = (double)enc1T;
+  input = (double)enc2T;
+  output = computePI_angle(input);
+  delay(100);
+  double wheelTheta2 = (2.0 * pie * (double)enc2T) / (double)motor_counts;
+  double wheelDistance2T = (wheelTheta2 * r) / 12;
+
+  if (wheelDistance1T <= targetAngle) {
+    md.setM1Speed(-100);
+    md.setM2Speed(-100 + output);
+  }
+  else if (wheelDistance1T > targetAngle) {
+    while(true){
+    md.setM1Speed(0);
+    md.setM2Speed(0); 
+    }
+    turnLeftFlag = false;
     Serial.println("changing turnFlag");
     driveFlag = true;
 
