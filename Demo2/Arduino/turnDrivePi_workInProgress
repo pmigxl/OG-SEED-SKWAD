@@ -30,10 +30,10 @@ double wheelThetaStart1;
 double wheelThetaStart2;
 double wheelDistStart1;
 double wheelDistStart2;
-double distance = 2 - 0.305; //to travel - fudge factor was .25
-double deg = 90; // to rotate
+double distance = 2; //will be set by the pi at some point
+double fudgeFactor = 0.305; 
+double deg = 90; // to rotate - will be set by the Pi
 double diameter = 0.9; //feet
-double distance_angle = 3.141*diameter*deg/360;
 
 //encoder parametrs
 double enc1_double;
@@ -86,11 +86,11 @@ void loop() {
   
   /*turnFlag = true;
   while (turnFlag == true) {
-    turn();
+    turn(deg);
   }
   driveFlag = true;
   while(driveFlag == true){
-    drive();
+    drive(distance);
     }
     */
 
@@ -133,7 +133,9 @@ void loop() {
     
 }
 
-void drive(int distanceTarget) {
+void drive(int dist) {
+  double distanceTarget = dist - fudgeFactor;
+
   long enc1D = encoderM1.read();
   double wheelTheta1D = (2.0 * pie * (double)enc1D) / (double)motor_counts;
   double wheelDistance1D = (wheelTheta1D * r)/12;
@@ -147,11 +149,11 @@ void drive(int distanceTarget) {
   double wheelTheta2D = (2.0 * pie * (double)enc2D) / (double)motor_counts;
   double wheelDistance2D = (wheelTheta2D * r) / 12;
 
-  if (wheelDistance1D <= distance) {//put in distanceTarget
+  if (wheelDistance1D <= distanceTarget) {//put in distanceTarget
     md.setM1Speed(-200);
-    md.setM2Speed(200 + output);
+    md.setM2Speed(200 + outputDrive);
   }
-  else if (wheelDistance1D > distance) {//put in distanceTarget
+  else if (wheelDistance1D > distanceTarget) {//put in distanceTarget
     driveFlag = false;
     md.setM1Speed(0);
     md.setM2Speed(0);
@@ -161,6 +163,8 @@ void drive(int distanceTarget) {
 
 //turn function
 void turn(double dataAngle) { //need to duplicate for the other direction??
+  double targetAngle = 3.141*diameter*dataAngle/360;
+
   long enc1T = encoderM1.read();
   double wheelTheta1 = (2.0 * pie * (double)enc1T) / (double)motor_counts;
   double wheelDistance1T = (wheelTheta1 * r) / 12;
@@ -173,11 +177,11 @@ void turn(double dataAngle) { //need to duplicate for the other direction??
   double wheelTheta2 = (2.0 * pie * (double)enc2T) / (double)motor_counts;
   double wheelDistance2T = (wheelTheta2 * r) / 12;
 
-  if (wheelDistance1T <= distance_angle) {//put in dataAngle
+  if (wheelDistance1T <= targetAngle) {
     md.setM1Speed(-100);
     md.setM2Speed(-100 + output);
   }
-  else if (wheelDistance1T > distance_angle) {//put in dataAngle
+  else if (wheelDistance1T > targetAngle) {
     while(true){
     md.setM1Speed(0);
     md.setM2Speed(0); 
