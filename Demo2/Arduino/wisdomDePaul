@@ -9,7 +9,7 @@ const double pwm_max = 255;
 const double v_max = 6;
 
 double kp = 3.0;
-double ki = 0.1;
+double ki = 2;
 
 Encoder encoderM1(3, 6);
 Encoder encoderM2(2, 5);
@@ -30,7 +30,7 @@ double wheelDistStart1;
 double wheelDistStart2;
 double deg = -180;
 double diameter = .9; // feet
-double distance = 3.141 * deg / 360;
+double distance = (diameter/2)*3.141 * deg / 180;
 
 double phi = 0;
 
