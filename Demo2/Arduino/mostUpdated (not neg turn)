@@ -1,0 +1,357 @@
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+#include <Wire.h>
+
+//robot and PI parameters
+double pie = 3.14159;
+bool flag;
+const int motor_counts = 3200;
+const double r = 3.0; //radius of the wheel in inches
+
+double kp_drive = 0.30;
+double ki_drive = 0.1;
+
+double kp_angle = 0.40;
+double ki_angle = 0.3;
+
+Encoder encoderM1(3, 6);
+Encoder encoderM2(2, 5);
+DualMC33926MotorShield md;
+
+//defining case statement names
+#define BEGIN 0
+#define NOTFOUND 1
+#define FOUND 2
+#define TURN 3
+#define ADJUST 4
+#define MOVEP1 5
+#define MOVEP2 6
+#define DONE 7
+
+//clk states
+int M1_CLK_STATE = 0;
+int M1_DT_STATE = 0;
+int M2_CLK_STATE = 0;
+int M2_DT_STATE = 0;
+
+
+//distance and angle parameters
+double wheelThetaStart1;
+double wheelThetaStart2;
+double wheelDistStart1;
+double wheelDistStart2;
+double distance = 2; //will be set by the pi at some point - just init here
+double fudgeFactor = 0.305; 
+double deg = 90; // to rotate - will be set by the Pi - just init here
+double diameter = 0.9; //feet
+
+//encoder parametrs
+double enc1_double;
+double enc2_double;
+double enc2_OUT;
+
+//PI parameters
+unsigned long currentTimeTurn, previousTimeTurn, currentTimeDrive, previousTimeDrive;
+double elapsedTimeTurn, elapsedTimeDrive;
+double errorTurn;
+double errorDrive;
+double lastErrorTurn, lastErrorDrive;
+double input, output, setPoint, inputDrive, outputDrive, setPointDrive;
+double totalErrorTurn, totalErrorDrive, rateError;
+
+
+bool driveFlag = false;
+bool turnFlag = false;
+//bool turnLeftFlag = false;
+
+//RASP PI SHIII
+bool reading = 0;
+bool request = 0;
+int importantVar = 0; //idk if we will need this
+#define SLAVE_ADDRESS 0x20
+#define PI_ADDRESS 0x2a
+int markerDetected = 0; //should be first value from pi to show if marker is seen by camera
+int number1 = 0;
+int number2 = 0;
+int number3 = 0;
+
+int currentState = 0; //current state for switch
+int nextState = 0; //next state for switch
+double angleTarget = 0;
+double distanceTarget = 0;
+double degSearcher = 0; //this is a hardcoded value to increment up to find the marker
+int demoChooser = 1; //start with part 1 of the demo where we stop within a foot of the marker
+
+int adjustError; 
+
+void setup() {
+  Serial.begin(115200);
+  md.init();
+  setPoint = 0;
+  setPointDrive = 0;
+
+  //Pi init
+  Wire.begin(PI_ADDRESS);
+  Wire.onReceive(receiveData);
+  Wire.onRequest(sendData);
+}
+
+
+
+
+void loop() {
+  
+  /*turnRightFlag = true;
+  while (turnRightFlag == true) {
+    turnRight(deg);
+  }
+  driveFlag = true;
+  while(driveFlag == true){
+    drive(distance);
+    }
+    */
+    currentState = BEGIN;
+
+  switch(currentState){
+
+    case BEGIN: //set everything to zero
+      hardReset();
+      deg = 0;
+      nextState = NOTFOUND;
+      if (demoChooser >= 3){
+        demoChooser = 1; //resets to doing part one of the demo
+      }
+      break;
+
+    case NOTFOUND: //increment robot rotation until seen
+      turnFlag = true;
+      if (markerDetected == 0){//marker not found
+        degSearcher += 30; //keep this hardcoded so it rotates a little bit
+        turn(degSearcher);
+      } else if (markerDetected == 1){//marker found
+        nextState = FOUND;
+      }
+
+      break;
+      
+    case FOUND: //confirm that we see the marker
+      if (markerDetected == 1){
+         nextState = TURN;
+      }else{
+        nextState = NOTFOUND;
+      }
+      
+      break;
+
+      case TURN://turn to line up with marker
+        turnFlag = true;
+        turn(deg);//value NEEDS to be read in from the pi to get angle we are getting on line with
+        
+        //this statement determines if we are doing part 1 or part 2 of the demo
+        if (demoChooser == 1){
+          nextState = MOVEP1;
+        }else if (demoChooser = 2){
+          nextState = MOVEP2;
+        }else{
+          nextState = DONE;
+        }
+        break;
+
+    //might not need ADJUST State - could be skippable is error is always low
+    case ADJUST: //make sure angle error is 0 so robot will go straight
+      turnFlag = false;
+      if ( adjustError >= -5 && adjustError <= 5){
+        turnFlag = true;
+        turn(2); // not actually right - just needs to turn   
+      }else {
+        adjustError = 0;
+      }
+      nextState = MOVEP1; // will need to use similar structure as above to determine which case to go with
+      break;
+
+    case MOVEP1: //move robot specified distance read in from pi and stops within 1 ft
+       driveFlag = true;
+       drive(distance - 0.4321);//this value needs to be read in from the pi and we take away a tad to not get right on the marker
+       nextState = DONE;
+      break;
+
+    case MOVEP2: //case to stop at marker... distance from pi
+        driveFlag = true;
+        drive(distance);
+        nextState = DONE;
+        demoChooser -= 1; //should reset to doing part 1 of the demo
+        break;
+
+    case DONE: //for the love of god no more
+        driveFlag = false;
+        turnFlag = false;
+        md.setM1Speed(0);
+        md.setM2Speed(0);
+        
+        break;
+
+    default:
+      break;
+    
+      currentState = nextState;
+      demoChooser += 1;
+  }
+
+  
+    
+}
+
+void drive(int dist) {
+  double distanceTarget = dist - fudgeFactor;
+
+  long enc1D = encoderM1.read();
+  double wheelTheta1D = (2.0 * pie * (double)enc1D) / (double)motor_counts;
+  double wheelDistance1D = (wheelTheta1D * r)/12;
+
+
+  long enc2D = encoderM2.read() * -1;
+  setPointDrive = (double)enc1D;
+  inputDrive = (double)enc2D;
+  outputDrive = computePI_drive(inputDrive);
+  delay(100);
+  double wheelTheta2D = (2.0 * pie * (double)enc2D) / (double)motor_counts;
+  double wheelDistance2D = (wheelTheta2D * r) / 12;
+
+  if (wheelDistance1D <= distanceTarget) {//put in distanceTarget
+    md.setM1Speed(-200);
+    md.setM2Speed(200 + outputDrive);
+  }
+  else if (wheelDistance1D > distanceTarget) {//put in distanceTarget
+    driveFlag = false;
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+
+  }
+}
+
+//turn function - should be able to turn both left and right given positive and negative angles
+void turn(double dataAngle) { 
+  double targetAngle = 3.141*diameter*dataAngle/360;
+
+  long enc1T = encoderM1.read();
+  double wheelTheta1 = (2.0 * pie * (double)enc1T) / (double)motor_counts;
+  double wheelDistance1T = (wheelTheta1 * r) / 12;
+
+  long enc2T = encoderM2.read() * -1;
+  setPoint = (double)enc1T;
+  input = (double)enc2T;
+  output = computePI_angle(input);
+  delay(100);
+  double wheelTheta2 = (2.0 * pie * (double)enc2T) / (double)motor_counts;
+  double wheelDistance2T = (wheelTheta2 * r) / 12;
+
+  if (wheelDistance1T <= targetAngle) {
+    md.setM1Speed(-100);
+    md.setM2Speed(-100 + output);
+  }
+  else if (wheelDistance1T > targetAngle) {
+    while(true){
+    md.setM1Speed(0);
+    md.setM2Speed(0); 
+    }
+    turnFlag = false;
+    Serial.println("changing turnFlag");
+    driveFlag = true;
+
+  }
+}
+
+//turn left function - I dont think we are using this with the new turn function
+void turnLeft(double dataAngle) { 
+  double targetAngle = 3.141*diameter*dataAngle/360;
+
+  long enc1T = encoderM1.read();
+  double wheelTheta1 = (2.0 * pie * (double)enc1T) / (double)motor_counts;
+  double wheelDistance1T = (wheelTheta1 * r) / 12;
+
+  long enc2T = encoderM2.read() * -1;
+  setPoint = (double)enc1T;
+  input = (double)enc2T;
+  output = computePI_angle(input);
+  delay(100);
+  double wheelTheta2 = (2.0 * pie * (double)enc2T) / (double)motor_counts;
+  double wheelDistance2T = (wheelTheta2 * r) / 12;
+
+  if (wheelDistance1T <= targetAngle) {
+    md.setM1Speed(-100);
+    md.setM2Speed(-100 + output);
+  }
+  else if (wheelDistance1T > targetAngle) {
+    while(true){
+    md.setM1Speed(0);
+    md.setM2Speed(0); 
+    }
+    //turnLeftFlag = false;
+    Serial.println("changing turnFlag");
+    driveFlag = true;
+
+  }
+}
+
+/*
+  PID FUNCTIONS
+  ---------------
+*/
+double computePI_angle(double input) { //controller for turning
+  currentTimeTurn = millis();
+  elapsedTimeTurn = (double)(currentTimeTurn - previousTimeTurn) / 1000;
+  errorTurn = (-setPoint) - input;
+  totalErrorTurn += errorTurn * elapsedTimeTurn;
+  double outTurn = kp_angle * errorTurn + ki_angle * totalErrorTurn;
+
+  lastErrorTurn = errorTurn;
+  previousTimeTurn = currentTimeTurn;
+  return outTurn;
+}
+
+double computePI_drive(double inputDrive) { // controller for moving forward
+  currentTimeDrive = millis();
+  elapsedTimeDrive = (double)(currentTimeDrive - previousTimeDrive) / 1000;
+  errorDrive = setPointDrive - inputDrive;
+  totalErrorDrive += errorDrive * elapsedTimeDrive;
+
+  double outDrive = kp_drive * errorDrive + ki_drive * totalErrorDrive;
+
+  lastErrorDrive = errorDrive;
+  previousTimeDrive = currentTimeDrive;
+  return outDrive;
+}
+
+//PI functions
+
+void receiveData(int byteCount) {
+  while (Wire.available()) {
+    number1 = Wire.read();
+    number2 = Wire.read();
+    number3 = Wire.read();
+    Serial.print("data receieved: ");
+    Serial.print(number1);
+    Serial.print("\t");
+    Serial.print(number2);
+    Serial.print("\t");
+    Serial.println(number3);
+  }
+}
+
+void sendData() {
+  Wire.write(number1);
+  Wire.write(number2);
+  Wire.write(number3);
+}
+
+
+void hardReset(){
+  //set all changing variables for movement to zero
+  turnFlag = false;
+  driveFlag = false;
+  deg = 0;
+  distance = 0;
+  md.setM1Speed(0);
+  md.setM2Speed(0);
+  
+}
