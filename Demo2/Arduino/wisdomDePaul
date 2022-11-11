@@ -5,9 +5,11 @@ double pie = 3.14159;
 bool flag;
 const int motor_counts = 3200;
 const double r = 3.0; //radius of the wheel in inches
+const double pwm_max = 255;
+const double v_max = 6;
 
-double kp = 0.40;
-double ki = 0.3;
+double kp = 3.0;
+double ki = 0.1;
 
 Encoder encoderM1(3, 6);
 Encoder encoderM2(2, 5);
@@ -26,9 +28,11 @@ double wheelThetaStart1;
 double wheelThetaStart2;
 double wheelDistStart1;
 double wheelDistStart2;
-double deg = 90;
+double deg = -180;
 double diameter = .9; // feet
-double distance = 3.141 * diameter * deg / 360;
+double distance = 3.141 * deg / 360;
+
+double phi = 0;
 
 
 
@@ -55,26 +59,47 @@ void loop() {
 
   long enc1 = encoderM1.read();
   double wheelTheta1 = (2.0 * pie * (double)enc1) / (double)motor_counts;
-  double wheelDistance1 = (wheelTheta1 * r) / 12;
-
+  double wheelDistance1 = (wheelTheta1 * r);
 
   long enc2 = encoderM2.read() * -1;
+  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
+  double wheelDistance2 = (wheelTheta2 * r);
+
+  phi = (wheelDistance1-wheelDistance2)/(diameter*12*2);
+  
   setPoint = (double)enc1;
   input = (double)enc2;
-  output = computePI(input);
+  output = computePI();
   delay(100);
-  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
-  double wheelDistance2 = (wheelTheta2 * r) / 12;
 
+  int pwm_l = 0;
+  int pwm_r = 0;
+
+  if (abs(output) > v_max) output = (v_max)*abs(output)/output;
+
+  pwm_l = -(double)pwm_max*(double)output/(double)v_max;
+  pwm_r = -(double)pwm_max*(double)output/(double)v_max;
+
+    Serial.print(error);
+  Serial.print("\t");
+  Serial.print(wheelDistance1);
+  Serial.print("\t");
+  Serial.print(wheelDistance2);
+  Serial.print("\t");
+  Serial.print(pwm_r);
+  Serial.print("\t");
+  Serial.print(pwm_l);
+  Serial.print("\t");
+  Serial.println(distance);
+
+  md.setM1Speed(pwm_r);
+  md.setM2Speed(pwm_l);
+/*
   if ((wheelDistance1 > distance) && (wheelDistance2 > distance)) {
     if (deg <= 0) {
       md.setM1Speed(100);
       md.setM2Speed(-100 + output);
-      Serial.print(enc1);
-      Serial.print("\t");
-      Serial.print(wheelDistance1);
-      Serial.print("\t");
-      Serial.println(wheelDistance2);
+      
     }
   }
   else if (wheelDistance1 < distance) {
@@ -99,7 +124,7 @@ void loop() {
       md.setM1Speed(0);
       md.setM2Speed(0);
     }
-  }
+  }*/
   
 
 
@@ -132,10 +157,10 @@ void loop() {
 //  }
 
 
-double computePI(double input) {
+double computePI() {
   currentTime = millis();
   elapsedTime = (double)(currentTime - previousTime) / 1000;
-  error = (-setPoint) - input;
+  error = distance - phi;
   totalError += error * elapsedTime;
   double out = kp * error + ki * totalError;
   //  Serial.print("error:");
