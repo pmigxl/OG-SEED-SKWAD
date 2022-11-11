@@ -26,7 +26,7 @@ double wheelThetaStart1;
 double wheelThetaStart2;
 double wheelDistStart1;
 double wheelDistStart2;
-double deg = -360;
+double deg = -180;
 double diameter = .9; // feet
 double distance = 3.141 * diameter * deg / 360;
 
