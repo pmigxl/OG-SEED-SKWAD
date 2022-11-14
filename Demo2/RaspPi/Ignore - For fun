@@ -104,7 +104,31 @@ while True:
 
                 # return the angle
                 return angle
-            
+                
+          if ids is not None:
+            # loop through if there are multiple markers
+            for x in range(len(ids)):
+                # find the mix right side and min left side
+                min_x = 100000
+                max_x = 0
+                for i in range(len(corners[0][0])):
+                    if corners[x][0][i][0] < min_x:
+                        min_x = corners[0][0][i][0]
+                    if corners[x][0][i][0] > max_x:
+                        max_x = corners[0][0][i][0]
+
+                # find pix of marker
+                pix = max_x - min_x
+
+                # calculate the distance
+                distance = (self.marker_size) / (math.tan((math.radians(self.FOV_X) * pix)/size[0]))
+
+                # return the angle
+                return distance
+        else:
+            return None
+                
+     def writeNumber(comDetect, angle, distance):       
         
     
     cv2.imshow("frame", frame)
