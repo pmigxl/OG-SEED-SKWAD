@@ -1,4 +1,4 @@
-
+#Faster Camera, I2C in progress
 
 from picamera.array import PiRGBArray
 from picamera import PiCamera
@@ -36,31 +36,30 @@ class CameraBufferCleanerThread(threading.Thread):
         while True:
             ret, self.last_frame = self.camera.read()
 
-#I2C communication line
-def displayLCD(flag, angle, distance):
+            
+            
+def writeNumber(comDetect, comAngle, comDist):
     global data
-    if flag == True: # If camera sees Aruco marker
-        try:                                 
-            if data != '123':   # While Arduino hasn't send the distance flag ('123'), attempt to read from the Arduino    
+    if comDetect == True:
+   
+        try:
+            if data != '234':
                 data = ''
                 for i in range(0,3):
                     data += chr(abus.read_byte(address))
-                #print(data)
-            if data == '123':                            # If RPi recieves distance flag, start sending the distance
-                #print('hi')
-                #print(distance)
-                # Send the distance as an integer by first multiplying by 10 (Ex. 1.2 ft -> 12 ft, divide by 10 in Arduino)
-                abus.write_byte(address, int(distance * 10) )   
-                #print('send') 
-                data = ''   # Reset data
-            else:                    # While distance flag hasn't been recieved, send the angle to Arduino
-                print(angle)
-                abus.write_byte(address, angle)
+                print(data)
+            if data == '234':
+                abus.write_bus(address, comDist)
+                data = ''
+            else:
+                abus.write_byte(address, comAngle)
         except:
             None
-    else:                #If marker isn't detect, inform of failure
-        print('fail')
+    else:
+        print('io error')
+
     return -1
+
 
 
 
@@ -101,7 +100,7 @@ while True:
         (corners, ids, rejected) = cv2.aruco.detectMarkers(img, arucoDict, parameters=arucoParams)
         # See if
         if len(corners)> 0:
-            flag = True 
+            detect = 1
             counter += 1
             ids = ids.flatten() 
             rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, markerSize, mtx, dist) 
@@ -140,12 +139,12 @@ while True:
                 y = (tvec[0][0][0]/100) 
                      
                 # Calculate the distance using z-vector of tvec and y-vector of tvec to get accurate distance
-                distFromCamToMarker = round( math.sqrt(math.pow(z,2) + math.pow(y,2)) , 1) + 0.2 #Add 0.2 to compenstate for cam position on robot
+                dist = round( math.sqrt(math.pow(z,2) + math.pow(y,2)) , 1) + 0.2 #Add 0.2 to compenstate for cam position on robot
                 #distFromCamToMarker = round( z , 1)
                 # Display the ID's and angle
                 #anglePrint = str(angle) + ' degrees'
                 actPrint = str(actAngle) + ' degrees'
-                distPrint = str(distFromCamToMarker) + ' ft'
+                distPrint = str(dist) + ' ft'
                 
                 printt = actPrint + distPrint
                 #print(distPrint)
@@ -153,14 +152,15 @@ while True:
                 #cv2.putText(img, actPrint, (topRight[0], topRight[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (25, 255, 0), 2)
                 cv2.putText(img, printt, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
                 #writeNumber(angle)
-                
+               
         # show the output image
         cv2.imshow('Image', img)
 
- 
+    else
+        detect = 0 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
+ writeNumber(detect, actAngle, dist)
 #End feed
 camera.release()
 cv2.destroyAllWindows()
