@@ -19,8 +19,10 @@ import pygame
 
 counter = 0
 abus = smbus.SMBus(1)
-address = 0x20
-
+address = 0x2a
+slave_address = 0x20
+time.sleep(1)
+i2c = board.I2C()
 
 data = ''
 
