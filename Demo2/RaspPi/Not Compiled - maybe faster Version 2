@@ -6,6 +6,14 @@ import smbus
 import smbus2
 import board
 import time
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import sys
+import math
+import threading
+import pickle
+import os
+
 
 FOV_X = 53.50
 FOV_Y = 41.41
@@ -122,7 +130,7 @@ while True:
                 pix = max_x - min_x
 
                 # calculate the distance
-                distance = (self.marker_size) / (math.tan((math.radians(self.FOV_X) * pix)/size[0]))
+                distance = (marker_size) / (math.tan((math.radians(FOV_X) * pix)/size[0]))
 
                 # return the angle
                 return distance
