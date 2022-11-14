@@ -9,8 +9,8 @@ const double r = 3.0; //radius of the wheel in inches
 const double pwm_max = 255;
 const double v_max = 6;
 
-double kp = 3.0;
-double ki = 2;
+double kp = 5;
+double ki = 0;
 
 Encoder encoderM1(3, 6);
 Encoder encoderM2(2, 5);
@@ -30,7 +30,7 @@ double wheelThetaStart2;
 double wheelDistStart1;
 double wheelDistStart2;
 //double deg = 90;
-double diameter = .9; // feet
+double diameter = 0.9; // feet
 int data;
 double distance;
 
@@ -56,6 +56,9 @@ double input, output, setPoint;
 double totalError, rateError;
 
 int index = 0;
+int pwm_l = 0;
+int pwm_r = 0;
+double target = 0;
 
 
 
@@ -73,8 +76,17 @@ void setup() {
 
 
 void loop() {
+  while (RECEIVED_DATA) {
+  delay(10);
+    if (data >= 128) {
+      target = (256 - data);
+    }
+    else {
+      target = -data;
+    }
+    Serial.print("data received: ");
+    //Serial.println(data);
 
-  if (RECEIVED_DATA) {
     long enc1 = encoderM1.read();
     double wheelTheta1 = (2.0 * pie * (double)enc1) / (double)motor_counts;
     double wheelDistance1 = (wheelTheta1 * r);
@@ -84,6 +96,7 @@ void loop() {
     double wheelDistance2 = (wheelTheta2 * r);
 
     phi = (wheelDistance1 - wheelDistance2) / (diameter * 12 * 2);
+
     setPoint = (double)enc1;
     input = (double)enc2;
     output = computePI();
@@ -94,24 +107,24 @@ void loop() {
 
     if (abs(output) > v_max) output = (v_max) * abs(output) / output;
 
-    pwm_l = -(double)pwm_max * (double)output / (double)v_max;
-    pwm_r = -(double)pwm_max * (double)output / (double)v_max;
+    pwm_l = (double)pwm_max * (double)output / (double)v_max;
+    pwm_r = (double)pwm_max * (double)output / (double)v_max;
 
     Serial.print(error);
     Serial.print("\t");
-    Serial.print(wheelDistance1);
+    Serial.print(distance);
     Serial.print("\t");
-    Serial.print(wheelDistance2);
+    Serial.print(data);
     Serial.print("\t");
-    Serial.print(pwm_r);
-    Serial.print("\t");
-    Serial.print(pwm_l);
-    Serial.print("\t");
-    Serial.println(distance);
+    Serial.println(target);
 
-    if (error != 0) {
-      md.setM1Speed(pwm_r);
-      md.setM2Speed(pwm_l);
+    if (target > 0) {
+      md.setM1Speed(-80);
+      md.setM2Speed(-80);
+    }
+    else if (target < 0) {
+      md.setM1Speed(80);
+      md.setM2Speed(0);
     }
     else {
       md.setM1Speed(0);
@@ -120,11 +133,10 @@ void loop() {
   }
 }
 
-
 double computePI() {
   currentTime = millis();
   elapsedTime = (double)(currentTime - previousTime) / 1000;
-  distance = ((diameter / 2) * 3.141 * data / 180);
+  distance = (diameter / 2) * 3.141 * data / 180;
   error = distance - phi;
   totalError += error * elapsedTime;
   double out = kp * error + ki * totalError;
@@ -138,8 +150,6 @@ double computePI() {
 void PI_READ(int byteCount) {
   while (Wire.available()) {
     data = Wire.read();
-    Serial.print("data received: ");
-    Serial.println(data);
     RECEIVED_DATA = 1;
     reading = 1;
   }
