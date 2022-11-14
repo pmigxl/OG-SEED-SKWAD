@@ -156,11 +156,11 @@ while True:
         # show the output image
         cv2.imshow('Image', img)
 
-    else
+    else:
         detect = 0 
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
- writeNumber(detect, actAngle, dist)
+writeNumber(detect, actAngle, dist)
 #End feed
 camera.release()
 cv2.destroyAllWindows()
