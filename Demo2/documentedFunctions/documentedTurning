@@ -1,7 +1,7 @@
 /*
 //Documented turning code to be used for demo 2. The code takes in M1 and M2 motors and a desired angle in degrees. Then, it converts this angle to radians, runs the 
 encoder value M2 to match -M1, and outputs this to the motors causing the robot to rotate
-/*
+*/
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
 
@@ -36,7 +36,7 @@ unsigned long currentTime, previousTime;
 double elapsedTime;
 double error;
 double lastError;
-double input, output, setPoint;
+double input, output, setPoint_turn;
 double totalError, rateError;
 
 
@@ -44,7 +44,7 @@ void setup() {
   //initializes the serial monitor, configs motor, and initalizes setPoint PI 
   Serial.begin(115200);
   md.init();
-  setPoint = 0;
+  setPoint_turn = 0;
 }
 
 
@@ -55,7 +55,7 @@ void loop() {
 double computePI(double input) { //PI controller that sets M2 to -M1
   currentTime = millis();
   elapsedTime = (double)(currentTime - previousTime) / 1000; //elapsed time created for the integral term
-  error = (-setPoint) - input;                               //error that is sent to the proportional controller
+  error = (-setPoint_turn) - input;                               //error that is sent to the proportional controller
   totalError += error * elapsedTime; //integral accumulation
   double out = kp * error + ki * totalError;                 //implements kp and ki terms for PI equation
   lastError = error;                                         //reset the time and error so each duration is measured
@@ -72,10 +72,10 @@ void turn(double deg_turn) {
 
 
   long enc2 = encoderM2.read() * -1; 
-  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;    //theta angle of the robot wheel
+  double wheelTheta2 = (2.0 * pi * (double)enc2) / (double)motor_counts;    //theta angle of the robot wheel
   double wheelDistance2 = (wheelTheta2 * r) / 12;                              //linear distance of the robot
 
-  setPoint = (double)enc1;                                                    //encoder 2 should go to encoder 1 but negative, making the robot turn right or left
+  setPoint_turn = (double)enc1;                                                    //encoder 2 should go to encoder 1 but negative, making the robot turn right or left
   input = (double)enc2;                                                       //enc 2 is the input
   output = computePI(input);                                                   //call PI controller and set value to output from enc 2 value
   delay(100);
