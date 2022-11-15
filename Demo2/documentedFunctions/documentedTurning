@@ -1,8 +1,11 @@
+/*
+//Documented turning code to be used for demo 2. The code takes in M1 and M2 motors and a desired angle in degrees. Then, it converts this angle to radians, runs the 
+encoder value M2 to match -M1, and outputs this to the motors causing the robot to rotate
+/*
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
 
-double pie = 3.14159;
-bool flag;
+double pi = 3.14159;
 const int motor_counts = 3200;
 const double r = 3.0; //radius of the wheel in inches
 //integral and proportional terms
@@ -17,7 +20,7 @@ double wheelThetaStart1;
 double wheelThetaStart2;
 double wheelDistStart1;
 double wheelDistStart2;
-double diameter = 0.9; // feet
+double diameter = 0.9; // diameter of robot's wheels in feet
 
 //pwm is between 0 and 255, making the max 255
 const double pwm_max = 255;
@@ -48,12 +51,12 @@ void loop() {
   turn(-90); //turn function that rotates the robot
 }
 
-double computePI(double input) { //PI controller 
+double computePI(double input) { //PI controller that sets M2 to -M1
   currentTime = millis();
   elapsedTime = (double)(currentTime - previousTime) / 1000; //elapsed time created for the integral term
   error = (-setPoint) - input; //error that is sent to the proportional controller
   totalError += error * elapsedTime; //integral accumulation
-  double out = kp * error + ki * totalError; //kp and ki terms for PI equation
+  double out = kp * error + ki * totalError; //implements kp and ki terms for PI equation
   lastError = error; //reset the time and error so each duration is measured
   previousTime = currentTime;
   return out;
@@ -63,7 +66,7 @@ double computePI(double input) { //PI controller
 void turn(double deg_turn) {
   double angle = 3.141 * diameter * deg_turn / 360; //angle is radians conversion from deg_turn inputted from the void loop
   long enc1 = encoderM1.read();
-  double wheelTheta1 = (2.0 * pie * (double)enc1) / (double)motor_counts; //theta angle of the robot wheel
+  double wheelTheta1 = (2.0 * pi * (double)enc1) / (double)motor_counts; //theta angle of the robot wheel
   double wheelDistance1 = (wheelTheta1 * r) / 12; //linear distance of the robot
 
 
