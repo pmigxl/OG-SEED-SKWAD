@@ -12,8 +12,8 @@ const double r = 3.0; //radius of the wheel in inches
 double kp = 0.40;
 double ki = 0.3;
 //encoder for M1 and M2
-Encoder encoderM1(3, 6);
-Encoder encoderM2(2, 5);
+Encoder encoderM1(3, 6); //white wire M1: 3, yellow wire M1: 6
+Encoder encoderM2(2, 5); //white wire M2: 2, yellow wire M2: 5
 DualMC33926MotorShield md;
 
 double wheelThetaStart1;
@@ -41,6 +41,7 @@ double totalError, rateError;
 
 
 void setup() {
+  //initializes the serial monitor, configs motor, and initalizes setPoint PI 
   Serial.begin(115200);
   md.init();
   setPoint = 0;
@@ -54,29 +55,29 @@ void loop() {
 double computePI(double input) { //PI controller that sets M2 to -M1
   currentTime = millis();
   elapsedTime = (double)(currentTime - previousTime) / 1000; //elapsed time created for the integral term
-  error = (-setPoint) - input; //error that is sent to the proportional controller
+  error = (-setPoint) - input;                               //error that is sent to the proportional controller
   totalError += error * elapsedTime; //integral accumulation
-  double out = kp * error + ki * totalError; //implements kp and ki terms for PI equation
-  lastError = error; //reset the time and error so each duration is measured
+  double out = kp * error + ki * totalError;                 //implements kp and ki terms for PI equation
+  lastError = error;                                         //reset the time and error so each duration is measured
   previousTime = currentTime;
   return out;
 }
 
 
 void turn(double deg_turn) {
-  double angle = 3.141 * diameter * deg_turn / 360; //angle is radians conversion from deg_turn inputted from the void loop
+  double angle = 3.141 * diameter * deg_turn / 360;           //angle is radians conversion from deg_turn inputted from the void loop
   long enc1 = encoderM1.read();
-  double wheelTheta1 = (2.0 * pi * (double)enc1) / (double)motor_counts; //theta angle of the robot wheel
-  double wheelDistance1 = (wheelTheta1 * r) / 12; //linear distance of the robot
+  double wheelTheta1 = (2.0 * pi * (double)enc1) / (double)motor_counts;  //theta angle of the robot wheel
+  double wheelDistance1 = (wheelTheta1 * r) / 12;              //linear distance of the robot
 
 
   long enc2 = encoderM2.read() * -1; 
-  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts; //theta angle of the robot wheel
-  double wheelDistance2 = (wheelTheta2 * r) / 12; //linear distance of the robot
+  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;    //theta angle of the robot wheel
+  double wheelDistance2 = (wheelTheta2 * r) / 12;                              //linear distance of the robot
 
-  setPoint = (double)enc1; //encoder 2 should go to encoder 1 but negative, making the robot turn right or left
-  input = (double)enc2; //enc 2 is the input
-  output = computePI(input); //call PI controller and set value to output from enc 2 value
+  setPoint = (double)enc1;                                                    //encoder 2 should go to encoder 1 but negative, making the robot turn right or left
+  input = (double)enc2;                                                       //enc 2 is the input
+  output = computePI(input);                                                   //call PI controller and set value to output from enc 2 value
   delay(100);
 
   int pwm_l = 0; //pwm values initialized
@@ -84,10 +85,10 @@ void turn(double deg_turn) {
 
   //if (abs(output) > v_max) output = (v_max)*abs(output)/output;
   //tested code
-  pwm_l = -(double)pwm_max * (double)output / (double)v_max; //converts M1 and M2 encoders into the pwm values from the output
+  pwm_l = -(double)pwm_max * (double)output / (double)v_max;                      //converts M1 and M2 encoders into the pwm values from the output
   pwm_r = -(double)pwm_max * (double)output / (double)v_max;
 
-  Serial.print(error); //prints out the pwm encoder values, distances, and angle determined
+  Serial.print(error);                                                      //prints out the pwm encoder values, distances, and angle determined
   Serial.print("\t");
   Serial.print(wheelDistance1);
   Serial.print("\t");
