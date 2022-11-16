@@ -1,1 +1,188 @@
 
+#Faster Camera, I2C in progress
+
+#Import Libraries 
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
+import cv2
+from cv2 import aruco
+import numpy as np
+import sys
+import math
+import smbus
+import smbus2
+import board
+import threading
+import pickle
+import os
+import pygame
+
+#define variables 
+fudge = 27.00 
+#Field of view of the camera 
+FOV = 53.76
+
+#set addresses and I2C stuff
+abus = smbus.SMBus(1)
+address = 0x2a
+slave_address = 0x20
+time.sleep(1)
+i2c = board.I2C()
+
+data = ''
+
+# Buffer thread to improve camera communication speed
+class CameraBuffer(threading.Thread):
+    def __init__(self, camera, name='camera-buffer-cleaner-thread'):
+        self.camera = camera
+        self.last_frame = None
+        super(CameraBufferCleanerThread, self).__init__(name=name)
+        self.start()
+
+    def run(self):
+        while True:
+            ret, self.last_frame = self.camera.read()
+
+            
+            
+def writeNumber(comDetect, comAngle, comDist):
+    global data
+    if comDetect == True:
+   
+        try:
+            if data != '234':
+                data = ''
+                for i in range(0,3):
+                    data += chr(abus.read_byte(address))
+                print(data)
+            if data == '234':
+                abus.write_bus(address, comDist)
+                data = ''
+            else:
+                abus.write_byte(address, comAngle)
+        except:
+            None
+    else:
+        print('io error')
+
+    return -1
+
+
+
+#Define various camera settings 
+camera = cv2.VideoCapture(0)
+camera.set(cv2.CAP_PROP_BUFFERSIZE, 2);
+camera.set(cv2.CAP_PROP_FPS, 20);
+camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25);
+camera.set(cv2.CAP_PROP_EXPOSURE, 30);
+
+
+
+# Start the camera buffer 
+cam_cleaner = CameraBuffer(camera)
+
+
+# Read in calibration file and assign important varaibles 
+with open ('camera_cal1.npy', 'rb') as f:
+    matx = np.load(f)
+    dist = np.load(f)
+
+ #Define what aruco dictionary to use and define parameters 
+ arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+ arucoParams = cv2.aruco.DetectorParameters_create()
+ (corners, ids, rejected) = cv2.aruco.detectMarkers(img, arucoDict, parameters=arucoParams)
+
+# Start Main Loop 
+while True:
+    
+    if cam_cleaner.last_frame is not None:
+    
+        #Converts image to greyscale 
+        img = cv2.cvtColor(cam_cleaner.last_frame, cv2.COLOR_BGR2GRAY)
+       
+        #Find the center of the image captured 
+        imgSize = img.shape
+        x = (imgSize[1] / 2) +1
+        y= (imgSize[0] / 2) +1
+        
+        # Enter if a marker is detected 
+        if ids is not None:
+            # Set detect state to "true" 
+            detect = 1
+            
+            # Collapses id array and returns it in one dimension 
+            ids = ids.flatten() 
+            
+            # Function to estimate real world positons / vectors
+            rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, fudge, matx, dist) 
+            
+            # For each marker this loop finds the corners, draws a bounding box, finds the center of the marker and calculates angle and distance 
+            for (markerCorner, markerID) in zip(corners, ids):
+                
+                # Define corners 
+                corners = markerCorner.reshape((4,2))
+                (topLeft, topRight, bottomRight, bottomLeft) = corners
+                topRight = (int(topRight[0]), int(topRight[1]))
+                bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
+                bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
+                topLeft = (int(topLeft[0]), int(topLeft[1]))
+                
+                # Draw bounding box 
+                cv2.line(img, topLeft, topRight, (0, 255, 0), 2)
+                cv2.line(img, topRight, bottomRight, (0, 255, 0), 2)
+                cv2.line(img, bottomRight, bottomLeft, (0, 255, 0), 2)
+                cv2.line(img, bottomLeft, topLeft, (0, 255, 0), 2)
+               
+                # Calculate center of marker 
+                centerX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                centerY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                cv2.circle(img, (centerX, centerY), 4, (0, 0, 255), -1)
+                
+                # Calculate the angle of the marker from the center of the camera 
+                angle = round( (FOV/2) * ( (x - centerX) / x))
+                
+                # Calibration based on camera testing 
+                if angle < -3:
+                    angle -= 3
+                elif angle > 3:
+                    angle += 3
+                elif angle < -1 and angle > -3:
+                    angle -= 1
+                elif aAngle > 1 and angle < 3:
+                    angle += 1
+                 
+                # Take calculated distance and convert into feet 
+                z = (tvec[0][0][2]/100)
+                y = (tvec[0][0][0]/100) 
+                     
+                # Distance calculation using real world vectors 
+                dist = round( math.sqrt(math.pow(z,2) + math.pow(y,2)) , 1) + 0.2 
+               
+                
+                # Display calculated angle and distance on screen
+                anglePrint = str(angle) + ' degrees'
+                distPrint = str(dist) + ' ft'
+                
+                printt = anglePrint + distPrint
+                
+                cv2.putText(img, printt, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
+               
+               
+        # Display image with angle, distance, and boudning box
+        cv2.imshow('Image', img)
+        
+    # If no id is detected, set detect state to "false"
+    if ids is None:
+        detect = 0 
+        
+    # Exit main loop if user presses q
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+        
+# Write detect, angle, and distance to the arduino      
+writeNumber(detect, actAngle, dist)
+
+# End camera feed 
+camera.release()
+cv2.destroyAllWindows()
