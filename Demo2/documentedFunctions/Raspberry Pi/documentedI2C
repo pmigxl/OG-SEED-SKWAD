@@ -13,7 +13,7 @@ slave_address = 0x20
 time.sleep(1)
 i2c = board.I2C()
 
-data = '' # Set data to 0
+data = '' # Set data to nothing
            
             
 def writeNumber(comDetect, comAngle, comDist):
