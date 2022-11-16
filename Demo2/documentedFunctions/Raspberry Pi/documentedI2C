@@ -1,1 +1,42 @@
+# defining existing libraries
+
+import time
+import smbus
+import smbus2
+import board
+
+# defining I2C variables and Pi/Arduino addresses
+
+abus = smbus.SMBus(1)
+address = 0x2a
+slave_address = 0x20
+time.sleep(1)
+i2c = board.I2C()
+
+data = '' # Set data to 0
+           
+            
+def writeNumber(comDetect, comAngle, comDist):
+    global data    # making data visible throughout the program
+    if comDetect == True:   # only enter try statements while the aruco marker is detected
+   
+        try:
+            if data != '234':
+                data = '' # set data to nothing
+                for i in range(0,3):
+                    data += chr(abus.read_byte(address))  # read in data as a character 
+                print(data)
+            if data == '234':   # while words reads in 234 from Arduino side
+                abus.write_bus(address, comDist)  # while words reads 234, write as distance
+                data = '' # reset data to nothing
+            else:
+                abus.write_byte(address, comAngle)   # while data is not 234, write as angle
+        except:
+            None  # Nothing is happening
+    else:
+        print('io error')   # while aruco is not detected
+
+    return -1
+
+writeNumber(detect, actAngle, dist)  # sends values to Arduino as detect, actAngle, and dist
 
