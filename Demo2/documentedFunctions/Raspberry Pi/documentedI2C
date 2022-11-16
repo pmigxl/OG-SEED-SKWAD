@@ -8,8 +8,8 @@ import board
 # defining I2C variables and Pi/Arduino addresses
 
 abus = smbus.SMBus(1)
-address = 0x2a
-slave_address = 0x20
+address = 0x2a   # provided from command line
+slave_address = 0x20    # provided from command line
 time.sleep(1)
 i2c = board.I2C()
 
