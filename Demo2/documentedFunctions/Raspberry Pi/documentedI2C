@@ -10,7 +10,7 @@ import board
 abus = smbus.SMBus(1)
 address = 0x2a   # provided from command line
 slave_address = 0x20    # provided from command line
-time.sleep(1)
+time.sleep(1)    # delay used to give time for reading from Arduino, will provide I2C error otherwise
 i2c = board.I2C()
 
 data = '' # Set data to nothing
