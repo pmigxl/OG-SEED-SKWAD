@@ -1,5 +1,15 @@
+# Computer Vision Code
+# To Use: Run code and show robot marker
+# Outputs:
+# detect variable, either 0 or 1 depeneding on whether or not a marker is in the field of view 
+# angle variable, outputs angle to marker from the center of the camera in degrees
+# dist variable, outputs the distance to the marker from the center of the camera in feet
 
-#Faster Camera, I2C in progress
+# Updates have been made and I have not had a chance to compile yet. There is a chance there are some indents that need to be fixed, but I think it should be fine
+# I'll delete this after it compiles successfuly 
+
+# I2C Code
+#???????????????????????
 
 #Import Libraries 
 from picamera.array import PiRGBArray
@@ -181,7 +191,7 @@ while True:
         break
         
 # Write detect, angle, and distance to the arduino      
-writeNumber(detect, actAngle, dist)
+writeNumber(detect, angle, dist)
 
 # End camera feed 
 camera.release()
