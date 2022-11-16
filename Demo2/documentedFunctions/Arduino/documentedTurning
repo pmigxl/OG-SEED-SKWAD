@@ -36,7 +36,7 @@ unsigned long currentTime, previousTime;
 double elapsedTime;
 double error;
 double lastError;
-double input, output, setPoint_turn;
+double input_turn, output_turn, setPoint_turn;
 double totalError, rateError;
 
 
@@ -52,10 +52,10 @@ void loop() {
   turn(-90); //turn function that rotates the robot
 }
 
-double computePI(double input) { //PI controller that sets M2 to -M1
+double computePI(double input_turn) { //PI controller that sets M2 to -M1
   currentTime = millis();
   elapsedTime = (double)(currentTime - previousTime) / 1000; //elapsed time created for the integral term
-  error = (-setPoint_turn) - input;                               //error that is sent to the proportional controller
+  error = (-setPoint_turn) - input_turn;                               //error that is sent to the proportional controller
   totalError += error * elapsedTime; //integral accumulation
   double out = kp * error + ki * totalError;                 //implements kp and ki terms for PI equation
   lastError = error;                                         //reset the time and error so each duration is measured
@@ -64,20 +64,20 @@ double computePI(double input) { //PI controller that sets M2 to -M1
 }
 
 
-void turn(double deg_turn) {
+void turn(double deg_turn) { 
   double angle = 3.141 * diameter * deg_turn / 360;           //angle is radians conversion from deg_turn inputted from the void loop
-  long enc1 = encoderM1.read();
+  long enc1 = encoderM1.read();                                            //reads the encoder of M1
   double wheelTheta1 = (2.0 * pi * (double)enc1) / (double)motor_counts;  //theta angle of the robot wheel
   double wheelDistance1 = (wheelTheta1 * r) / 12;              //linear distance of the robot
 
 
   long enc2 = encoderM2.read() * -1; 
-  double wheelTheta2 = (2.0 * pi * (double)enc2) / (double)motor_counts;    //theta angle of the robot wheel
+  double wheelTheta2 = (2.0 * pi * (double)enc2) / (double)motor_counts;      //reads the encoder of M2
   double wheelDistance2 = (wheelTheta2 * r) / 12;                              //linear distance of the robot
 
   setPoint_turn = (double)enc1;                                                    //encoder 2 should go to encoder 1 but negative, making the robot turn right or left
-  input = (double)enc2;                                                       //enc 2 is the input
-  output = computePI(input);                                                   //call PI controller and set value to output from enc 2 value
+  input_turn = (double)enc2;                                                       //enc 2 is the input
+  output_turn = computePI(input_turn);                                                   //call PI controller and set value to output from enc 2 value
   delay(100);
 
   int pwm_l = 0; //pwm values initialized
@@ -85,8 +85,8 @@ void turn(double deg_turn) {
 
   //if (abs(output) > v_max) output = (v_max)*abs(output)/output;
   //tested code
-  pwm_l = -(double)pwm_max * (double)output / (double)v_max;                      //converts M1 and M2 encoders into the pwm values from the output
-  pwm_r = -(double)pwm_max * (double)output / (double)v_max;
+  pwm_l = -(double)pwm_max * (double)output_turn / (double)v_max;                      //converts M1 and M2 encoders into the pwm values from the output
+  pwm_r = -(double)pwm_max * (double)output_turn / (double)v_max;
 
   Serial.print(error);                                                      //prints out the pwm encoder values, distances, and angle determined
   Serial.print("\t");
@@ -106,7 +106,7 @@ void turn(double deg_turn) {
   if ((wheelDistance1 > angle) && (wheelDistance2 > angle)) {
     if (deg_turn <= 0) { //turn the robot to the left
       md.setM1Speed(100);
-      md.setM2Speed(-100 + output);
+      md.setM2Speed(-100 + output_turn);
       Serial.print(enc1);
       Serial.print("\t");
       Serial.print(wheelDistance1);
@@ -123,7 +123,7 @@ void turn(double deg_turn) {
   if (wheelDistance1 < angle) { //turn the robot to the right
     if (deg_turn > 0) {
       md.setM1Speed(-100);
-      md.setM2Speed(-100 + output);
+      md.setM2Speed(-100 + output_turn);
       Serial.print(enc1);
       Serial.print("\t");
       Serial.print(wheelDistance1);
