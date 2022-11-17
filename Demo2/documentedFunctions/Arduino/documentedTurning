@@ -49,7 +49,7 @@ void setup() {
 
 
 void loop() {
-  turn(-90); //turn function that rotates the robot
+  turn(90); //turn function that rotates the robot
 }
 
 double computePI(double input_turn) { //PI controller that sets M2 to -M1
@@ -102,7 +102,6 @@ void turn(double deg_turn) {
   //set the motor to the pwm values indicated by the M1 and M2
   md.setM1Speed(pwm_r);
   md.setM2Speed(pwm_l);
-  //end of test code
   if ((wheelDistance1 > angle) && (wheelDistance2 > angle)) {
     if (deg_turn <= 0) { //turn the robot to the left
       md.setM1Speed(100);
