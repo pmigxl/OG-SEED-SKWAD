@@ -75,10 +75,10 @@ void loop() {
 
 //this function takes in distance from pi and moves the robot forward a specified distance
 //it does this while also accounting for error to keep the robot moving straight
-void drive(int targetDist){
+void drive(double targetDist){
 
   
-  int distance = targetDist;
+  double distance = targetDist - fudgeFactor;
 
   //reading in counts from encoders and converting from counts to linear distance
   long enc1 = encoderM1.read();
