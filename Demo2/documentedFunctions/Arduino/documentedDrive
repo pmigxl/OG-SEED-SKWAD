@@ -47,7 +47,7 @@ void loop() {
 //it does this while also accounting for error to keep the robot moving straight
 void drive(double targetDist){
 
-  double distance = targetDist - fudgeFactor;
+  double distance = targetDist - fudgeFactor; //must be doubles
 
   //reading in counts from encoders and converting from counts to linear distance
   long enc1 = encoderM1.read();
