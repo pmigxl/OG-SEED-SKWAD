@@ -30,7 +30,6 @@ double lastError;
 double input,output, setPoint;
 double totalError;
 
-
 void setup() {
   Serial.begin(115200);
   md.init();
@@ -46,9 +45,9 @@ void loop() {
 
 //this function takes in distance from pi and moves the robot forward a specified distance
 //it does this while also accounting for error to keep the robot moving straight
-void drive(int targetDist){
+void drive(double targetDist){
 
-  int distance = targetDistance - fudgeFactor;
+  double distance = targetDist - fudgeFactor;
 
   //reading in counts from encoders and converting from counts to linear distance
   long enc1 = encoderM1.read();
@@ -64,10 +63,9 @@ void drive(int targetDist){
   output = computePI(input);
   delay(100);
   
-  
   if(wheelDistance1 <= distance){
-    md.setM1Speed(-200);
-    md.setM2Speed(200 + output);
+    md.setM1Speed(-200); 
+    md.setM2Speed(200 + output); 
     //Serial.print(enc1);
     //Serial.print("\t");
     //Serial.println(wheelDistance1);
