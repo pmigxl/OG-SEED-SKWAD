@@ -1,5 +1,4 @@
 # Computer Vision Code
-# Angles are reported backwards (negs should be positive, vice versa)
 # Doesn't compile (not indentation related)
 # Fixed up through line 99, img used before being defined
 # May be more errors after that?
