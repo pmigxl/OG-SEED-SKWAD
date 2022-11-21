@@ -1,0 +1,206 @@
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+#include <Wire.h>
+
+double pie = 3.14159;
+const int motor_counts = 3200; //counts per one rotation of encoder
+const double r = 3.0; //radius of the wheel in inches
+
+//these are the controller variable that keep encoders at same speed and robot going straight
+double kp = 0.30; 
+double ki = 0.1;
+
+//defining our encoders and setting up our motor control shield
+Encoder encoderM1(3, 6);
+Encoder encoderM2(2, 5);
+DualMC33926MotorShield md;
+
+//4 variables below are for the positioning of the wheels
+double wheelThetaStart1;
+double wheelThetaStart2;
+double wheelDistStart1;
+double wheelDistStart2;
+
+double piDist = 0.0; //hardcoded distance we want the robot to travel
+double fudgeFactor = 0.305; //error adjustment
+
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double input,output, setPoint;
+double totalError;
+
+bool driveFlag = false;
+int words = 0; //variable to get distance from the pi
+bool RECEIVED_DATA = 0; //only true if aruco marker is detected
+int data;
+int index = 0;
+bool request = 0;
+
+#define SLAVE_ADDRESS 0x20
+#define PI_ADDRESS 0x2a
+
+//FSM variables
+int currentState = 0;
+int nextState = 0;
+
+//FSM state name declarations
+#define BEGIN 0
+#define FOUND 1
+#define MOVEP1 2
+#define MOVEP2 3
+#define DONE 4
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(12, INPUT);
+  pinMode(13, OUTPUT);
+  md.init();
+  setPoint = 0;
+
+   //Pi init
+  Wire.begin(PI_ADDRESS);
+  Wire.onReceive(PI_READ);
+  Wire.onRequest(PI_WRITE);
+
+  //start FSM at BEGIN state
+  currentState = BEGIN;
+}
+
+//main loop that calls our drive funcion
+void loop() {
+
+  switch(currentState){
+
+    case BEGIN:
+    //set changing vars to 0
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      piDist = 0;
+      words = 0;
+      //Serial.println("In BEGIN state");
+      Serial.print("Received data is: ");
+      Serial.print(RECEIVED_DATA);
+      Serial.print("\t");
+      Serial.println(currentState);
+      nextState = FOUND;
+      break;
+
+    case FOUND:
+    //set words to 234 if marker is detected
+      Serial.println("In FOUND state");
+      words = 234;
+      if (request) {
+        if(RECEIVED_DATA){
+          nextState = MOVEP1;
+        }else{
+          nextState = FOUND;
+        }
+      }
+      Serial.println("Not entering request");
+      break;
+
+    case MOVEP1:
+      Serial.println("In MOVEP1 state");
+      driveFlag = true;
+      piDist = data;
+      Serial.print("Distance to travel: ");
+      Serial.println(piDist);
+      drive(piDist);
+      if (driveFlag == false){
+        nextState = DONE;
+      }
+      
+        
+      break;
+
+    case DONE:
+      Serial.println("In DONE state");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      words = 0;
+      piDist = 0;
+      break;
+
+    default:
+      break;
+  }
+  currentState = nextState;
+}
+
+//this function takes in distance from pi and moves the robot forward a specified distance
+//it does this while also accounting for error to keep the robot moving straight
+void drive(double targetDist){
+
+  
+  double distance = targetDist - fudgeFactor;
+
+  //reading in counts from encoders and converting from counts to linear distance
+  long enc1 = encoderM1.read();
+  double wheelTheta1 = (2.0 * pie * (double)enc1) / (double)motor_counts;
+  double wheelDistance1 = (wheelTheta1 * r)/12;
+
+  long enc2 = encoderM2.read() *-1;
+
+  
+  setPoint = (double)enc1;
+  input = (double)enc2;
+  output = computePI(input);
+  delay(100);
+  double wheelTheta2 = (2.0 * pie * (double)enc2) / (double)motor_counts;
+  double wheelDistance2 = (wheelTheta2 * r)/12;
+  
+  if(wheelDistance1 <= distance){
+    md.setM1Speed(-200);
+    md.setM2Speed(200 + output);
+    //Serial.print(enc1);
+    //Serial.print("\t");
+    //Serial.println(wheelDistance1);
+    //Serial.print("\t");
+    //Serial.println(wheelDistance2);
+  }
+  else if(wheelDistance1 > distance){
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    driveFlag = false;
+  }
+}
+
+void PI_READ(int byteCount) {
+  while (Wire.available()) {
+    data = Wire.read();
+    Serial.print("data received: ");
+    Serial.println(data);
+    RECEIVED_DATA = 1;
+  }
+}
+
+void PI_WRITE() {
+  String myNum = String(int(words));
+  int string_length = myNum.length() + 1;
+  char charArray[string_length];
+  myNum.toCharArray(charArray, string_length);
+
+  // Sending a value to the Pi
+  Wire.write(charArray[index]);
+  ++index;
+  if (index >= 3) {
+    index = 0;
+  }
+  request = 1;
+}
+//this function takes in the counts from the encoder 
+double computePI(double input){
+  currentTime = millis();
+  elapsedTime = (double)(currentTime - previousTime)/1000;
+  error = setPoint - input; //difference between encoder 1 and 2
+  totalError += error * elapsedTime;
+
+  double out = kp*error + ki*totalError;
+
+  //resetting values to run again if necessary
+  lastError = error;
+  previousTime = currentTime;
+  return out;
+}
