@@ -98,7 +98,9 @@ void loop() {
           nextState = FOUND;
         }
       }
-      Serial.println("Not entering request");
+      if (request = false) {
+        Serial.println("Not entering request");
+      }
       break;
 
     case MOVEP1:
