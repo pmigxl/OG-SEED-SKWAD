@@ -29,7 +29,28 @@ class I2C:
 
     def __init__(self, address, abus = smbus.SMBus(1)):
         self.address = address
-        self.abus = abus
+        super(I2C, self)._init_(abus = abus)
+    
+    def writeList(self, , list):
+        "Writes an array of bytes using I2C format"
+        while True:
+            try:
+                self.bus.write_i2c_block_data(self.address, reg, list)
+                break
+            except IOError:
+                logger.exception('Error %d, %s accessing 0x%02X: Check your I2C address', err.errno, err.strerror, self.address)
+                time.sleep(0.001)
+                
+     def readList(self, reg, length):
+        "Reads as a byte array value from the I2C device"
+        while True:
+            try:
+                result = self.bus.read_i2c_block_data(self.address, reg, length)
+                logger.debug('I2C: Device 0x%02X from reg 0x%02X', self.address, reg)
+                return result
+            except IOError:
+                logger.exception('Error %d, %s accessing 0x%02X: Check your I2C address', err.errno, err.strerror, self.address)
+                time.sleep(0.001)
 
 #    def reverseByteOrder(self, data):
 #        "Reverses the byte order of an int (16-bit) or long (32-bit) value"
@@ -53,17 +74,6 @@ class I2C:
 #            except IOError:
 #                logger.exception('Error %d, %s accessing 0x%02X: Check your I2C address', err.errno, err.strerror, self.address)
 #                time.sleep(0.001)
-#
-#    def writeList(self, , list):
-#        "Writes an array of bytes using I2C format"
-#        while True:
-#            try:
-#                self.bus.write_i2c_block_data(self.address, reg, list)
-#                break
-#            except IOError:
-#                logger.exception('Error %d, %s accessing 0x%02X: Check your I2C address', err.errno, err.strerror, self.address)
-#                time.sleep(0.001)
-#
 #    def readU8(self, reg):
 #        "Read an unsigned byte from the I2C device"
 #        while True:
@@ -123,16 +133,7 @@ class I2C:
 #                logger.exception('Error %d, %s accessing 0x%02X: Check your I2C address', err.errno, err.strerror, self.address)
 #                time.sleep(0.001)
 #                
-    def readList(self, reg, length):
-        "Reads as a byte array value from the I2C device"
-        while True:
-            try:
-                result = self.bus.read_i2c_block_data(self.address, reg, length)
-                logger.debug('I2C: Device 0x%02X from reg 0x%02X', self.address, reg)
-                return result
-            except IOError:
-                logger.exception('Error %d, %s accessing 0x%02X: Check your I2C address', err.errno, err.strerror, self.address)
-                time.sleep(0.001)
+   
                
 class MyDisplay(I2C):
     def _init_(self, detectt, actAnglee, distt):
