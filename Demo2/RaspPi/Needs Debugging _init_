@@ -1,4 +1,4 @@
-# _init_ error message: _init_ takes from 2 to 3 positional arguments but 4 were given //line 268:  pi_data = MyDisplay(detectt, actAnglee, distt)
+# _init_ error message: _init_ takes from 2 to 3 positional arguments but 4 were given //line 269:  pi_data = MyDisplay(detectt, actAnglee, distt)
 
 #Faster Camera, I2C in progress
 from picamera.array import PiRGBArray
@@ -145,7 +145,7 @@ class MyDisplay(I2C):
     def display(self):
         print('Detect: {}'.format(self.detectt))
         print('Angle: {}'.format(self.actAnglee))
-        print('Dist: {}'.format(self.distt))
+        print('Distance: {}'.format(self.distt))
                
 # Define the thread that will continuously pull frames from the camera
 class CameraBufferCleanerThread(threading.Thread):
