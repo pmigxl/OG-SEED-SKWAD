@@ -1,4 +1,7 @@
 // integrated turn and drive with FSM
+
+//DOES NOT HAVE I2C functions PI_READ and PI_WRITE
+
 #include <DualMC33926MotorShield.h>
 #include <Encoder.h>
 #include <Wire.h>
