@@ -133,10 +133,15 @@ void loop() {
       Serial.println(piAngle);
 
       turn(piAngle);
+       if (turnFlag == 0){
+              nextState = MOVEP1;
+            }else {
+              nextState = FOUND;
+            }
 
       break;
 
-    case MOVEP1:
+    case MOVEP1: //moving exact distance
       Serial.println("In MOVEP1 state");
       driveFlag = true;
       piDist = dataDist;
@@ -149,7 +154,7 @@ void loop() {
 
       break;
 
-    case MOVEP2:
+    case MOVEP2: //moving adjusted distance
       Serial.println("In MOVEP2 state");
       driveFlag = true;
       piDist = dataDist;
