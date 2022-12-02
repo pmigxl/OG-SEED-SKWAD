@@ -1,0 +1,171 @@
+/*
+//Documented turning code to be used for demo 2. The code takes in M1 and M2 motors and a desired angle in degrees. Then, it converts this angle to radians, runs the 
+encoder value M2 to match -M1, and outputs this to the motors causing the robot to rotate
+*/
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+
+double pi = 3.14159;
+const int motor_counts = 3200;
+const double r = 3.0; //radius of the wheel in inches
+//integral and proportional terms
+double kp = 0.40;
+double ki = 0.3;
+//encoder for M1 and M2
+Encoder encoderM1(3, 6); //white wire M1: 3, yellow wire M1: 6
+Encoder encoderM2(2, 5); //white wire M2: 2, yellow wire M2: 5
+DualMC33926MotorShield md;
+
+double wheelThetaStart1;
+double wheelThetaStart2;
+double wheelDistStart1;
+double wheelDistStart2;
+double diameter = 0.9; // diameter of robot's wheels in feet
+
+//pwm is between 0 and 255, making the max 255
+const double pwm_max = 255;
+//voltage is a max of 6V from the battery, using saturation if exceeds this voltage
+const double v_max = 6;
+
+
+double enc1_double;
+double enc2_double;
+double enc2_OUT;
+
+unsigned long currentTime, previousTime;
+double elapsedTime;
+double error;
+double lastError;
+double input_turn, output_turn, setPoint_turn;
+double totalError, rateError;
+
+#define BEGIN 0
+#define TURN 1
+#define DONE 2
+
+int deg = -90; //degrees to rotate
+int currentState, nextState;
+
+bool turnFlag = 0;
+
+void setup() {
+  //initializes the serial monitor, configs motor, and initalizes setPoint PI 
+  Serial.begin(115200);
+  md.init();
+  setPoint_turn = 0;
+}
+
+
+void loop() {
+  switch (currentState) {
+    
+    case BEGIN:
+      //set changing vars to 0
+      Serial.println("Im not moving");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      delay(5000);
+      nextState = TURN;
+      break;
+
+
+    case TURN:
+
+      turnFlag = true;
+
+      turn(deg);
+      if (turnFlag == 0) {
+        nextState = DONE; //should be where we move to MOVEP1 or MOVEP2 state
+      }
+
+      break;
+
+    case DONE:
+      Serial.println("In DONE state");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      deg = 0;
+      break;
+
+  }
+  currentState = nextState;
+}
+
+double computePI(double input_turn) { //PI controller that sets M2 to -M1
+  currentTime = millis();
+  elapsedTime = (double)(currentTime - previousTime) / 1000; //elapsed time created for the integral term
+  error = (-setPoint_turn) - input_turn;                               //error that is sent to the proportional controller
+  totalError += error * elapsedTime; //integral accumulation
+  double out = kp * error + ki * totalError;                 //implements kp and ki terms for PI equation
+  lastError = error;                                         //reset the time and error so each duration is measured
+  previousTime = currentTime;
+  return out;
+}
+
+
+void turn(double deg_turn) { 
+  double angle = 3.141 * diameter * deg_turn / 360;           //angle is radians conversion from deg_turn inputted from the void loop
+  long enc1 = encoderM1.read();                                            //reads the encoder of M1
+  double wheelTheta1 = (2.0 * pi * (double)enc1) / (double)motor_counts;  //theta angle of the robot wheel
+  double wheelDistance1 = (wheelTheta1 * r) / 12;              //linear distance of the robot
+
+
+  long enc2 = encoderM2.read() * -1; 
+  double wheelTheta2 = (2.0 * pi * (double)enc2) / (double)motor_counts;      //reads the encoder of M2
+  double wheelDistance2 = (wheelTheta2 * r) / 12;                              //linear distance of the robot
+
+  setPoint_turn = (double)enc1;                                                    //encoder 2 should go to encoder 1 but negative, making the robot turn right or left
+  input_turn = (double)enc2;                                                       //enc 2 is the input
+  output_turn = computePI(input_turn);                                                   //call PI controller and set value to output from enc 2 value
+  delay(100);
+
+  int pwm_l = 0; //pwm values initialized
+  int pwm_r = 0;
+
+  //if (abs(output) > v_max) output = (v_max)*abs(output)/output;
+  //tested code
+  pwm_l = -(double)pwm_max * (double)output_turn / (double)v_max;                      //converts M1 and M2 encoders into the pwm values from the output
+  pwm_r = -(double)pwm_max * (double)output_turn / (double)v_max;
+
+  //set the motor to the pwm values indicated by the M1 and M2
+  md.setM1Speed(pwm_r);
+  md.setM2Speed(pwm_l);
+  if ((wheelDistance1 > angle) && (wheelDistance2 > angle)) {
+    if (deg_turn <= 0) { //turn the robot to the left
+      md.setM1Speed(100);
+      md.setM2Speed(-100 + output_turn);
+      Serial.print(enc1);
+      Serial.print("\t");
+      Serial.print(wheelDistance1);
+      Serial.print("\t");
+      Serial.println(wheelDistance2);
+    }
+  }
+  else if (wheelDistance1 < angle) { //stop the robot on left condition
+    if (deg_turn <= 0) {
+      Serial.println("Im stopping");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      turnFlag = 0;
+    }
+  }
+  if (wheelDistance1 < angle) { //turn the robot to the right
+    if (deg_turn > 0) {
+      md.setM1Speed(-100);
+      md.setM2Speed(-100 + output_turn);
+      Serial.print(enc1);
+      Serial.print("\t");
+      Serial.print(wheelDistance1);
+      Serial.print("\t");
+      Serial.println(angle);
+    }
+  }
+  else if (wheelDistance1 > angle) { //stop the robot on right condition
+    if (deg_turn > 0) {
+      Serial.println("Im stopping");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      turnFlag = 0;
+    }
+  }
+}
