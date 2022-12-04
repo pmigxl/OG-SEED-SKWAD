@@ -1,0 +1,333 @@
+// Dont forget to divide by 10
+
+#include <DualMC33926MotorShield.h>
+#include <Encoder.h>
+#include <Wire.h>
+
+double pi = 3.14159;
+const int motor_counts = 3200; //counts per one rotation of encoder
+const double r = 3.0; //radius of the wheel in inches
+
+//these are the controller variable that keep encoders at same speed and robot going straight
+double kp = 0.30;
+double ki = 0.1;
+
+//defining our encoders and setting up our motor control shield
+Encoder encoderM1(3, 6);
+Encoder encoderM2(2, 5);
+DualMC33926MotorShield md;
+
+//4 variables below are for the positioning of the wheels
+double wheelThetaStart1;
+double wheelThetaStart2;
+double wheelDistStart1;
+double wheelDistStart2;
+
+// Added 12/01 below
+double diameter = 0.9;
+const double pwm_max = 255;
+const double v_max = 6;
+double input_turn, output_turn, setPoint_turn;
+double target = 0;
+int words = 0;
+int index = 0;
+// Added 12/01 above
+
+double enc1_double;
+double enc2_double;
+double enc2_OUT;
+
+double piDist = 0.0; //hardcoded distance we want the robot to travel
+double piAngle = 0.0;
+double fudgeFactor = 0.305; //error adjustment
+
+unsigned long currentTime, previousTime;
+double elapsedTime;
+
+// Used for turn function
+double error;
+double lastError;
+double input, output, setPoint;
+double totalError, rateError;
+
+bool driveFlag =  0;
+bool turnFlag = 0;
+bool RECEIVED_DATA = 0; //only true if aruco marker is detected
+int data[32];
+
+#define SLAVE_ADDRESS 0x20
+#define PI_ADDRESS 0x2a
+
+//FSM variables
+int currentState = 0;
+int nextState = 0;
+
+//FSM state name declarations
+#define BEGIN 0
+#define FOUND 1
+#define TURN 2
+#define MOVEP1 3
+#define MOVEP2 4
+#define DONE 5
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(12, INPUT);
+  pinMode(13, OUTPUT);
+  md.init();
+  setPoint_turn = 0;
+  setPoint = 0;
+
+  //Pi init
+  Wire.begin(PI_ADDRESS);
+  Wire.onReceive(PI_READ);
+
+ 
+  //start FSM at BEGIN state
+  currentState = BEGIN;
+}
+
+//main loop that calls our drive funcion
+void loop() {
+
+  switch (currentState) {
+
+    case BEGIN:
+      //set changing vars to 0
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      piDist = 0;
+      //Serial.println("In BEGIN state");
+      Serial.print("Received data is: ");
+      Serial.print(RECEIVED_DATA);
+      Serial.print("\t");
+      Serial.println(currentState);
+      nextState = FOUND;
+      break;
+
+    case FOUND:
+      // Serial.println("In FOUND state");
+      if (RECEIVED_DATA) {
+        piAngle = -1 * (data[1] - 30); // 30 was added in Pi to keep angle positive. subtract here
+        piDist = data[0] / 10; // dividing by 10 to convert the int back to float from I2C --> 12 becomes 1.2 (feet)
+        nextState = TURN;
+      } else {
+        nextState = FOUND;
+      }
+      break;
+
+    case TURN:
+      //Serial.println("In TURN state");
+      //dataAngle = piAngle
+      turnFlag = true;
+      Serial.print("Angle Detected: ");
+      Serial.println(piAngle);
+
+      turn(piAngle);
+      if (turnFlag == 0) {
+        nextState = MOVEP1;
+      }
+
+      break;
+
+        case MOVEP1:
+          //     Serial.println("In MOVEP1 state");
+          driveFlag = true;
+          Serial.print("Distance to travel: ");
+          Serial.println(piDist);
+          drive(piDist);
+          if (driveFlag == false) {
+            nextState = MOVEP2;
+          }
+          break;
+    
+    
+        case MOVEP2:
+          //     Serial.println("In MOVEP2 state");
+          driveFlag = true;
+          piDist = data[0] / 10; // dividing by 10 to convert the int back to float from I2C --> 12 becomes 1.2 (feet)
+          Serial.print("Distnace to travel: ");
+          Serial.println(piDist);
+          drive(piDist - 0.321);
+          if (driveFlag == false) {
+            nextState = DONE;
+          }
+          break;
+
+
+    case DONE:
+      Serial.println("In DONE state");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      piDist = 0;
+      break;
+
+    default:
+      break;
+  }
+  currentState = nextState;
+}
+
+//this function takes in distance from pi and moves the robot forward a specified distance
+//it does this while also accounting for error to keep the robot moving straight
+void drive(double targetDist) {
+
+
+  double distance = targetDist - fudgeFactor;
+
+  //reading in counts from encoders and converting from counts to linear distance
+  long enc1 = encoderM1.read();
+  double wheelTheta1 = (2.0 * pi * (double)enc1) / (double)motor_counts;
+  double wheelDistance1 = (wheelTheta1 * r) / 12;
+
+  long enc2 = encoderM2.read() * -1;
+
+
+  setPoint = (double)enc1;
+  input = (double)enc2;
+  output = computePI(input);
+  delay(100);
+  double wheelTheta2 = (2.0 * pi * (double)enc2) / (double)motor_counts;
+  double wheelDistance2 = (wheelTheta2 * r) / 12;
+
+  if (wheelDistance1 <= distance) {
+    md.setM1Speed(-200);
+    md.setM2Speed(200 + output);
+    //Serial.print(enc1);
+    //Serial.print("\t");
+    //Serial.println(wheelDistance1);
+    //Serial.print("\t");
+    //Serial.println(wheelDistance2);
+  }
+  else if (wheelDistance1 > distance) {
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    driveFlag = false;
+  }
+}
+
+void turn(double deg_turn) {
+  double angle = 3.141 * diameter * deg_turn / 360;           //angle is radians conversion from deg_turn inputted from the void loop
+  long enc1 = encoderM1.read();                                            //reads the encoder of M1
+  double wheelTheta1 = (2.0 * pi * (double)enc1) / (double)motor_counts;  //theta angle of the robot wheel
+  double wheelDistance1 = (wheelTheta1 * r) / 12;              //linear distance of the robot
+
+
+  long enc2 = encoderM2.read() * -1;
+  double wheelTheta2 = (2.0 * pi * (double)enc2) / (double)motor_counts;      //reads the encoder of M2
+  double wheelDistance2 = (wheelTheta2 * r) / 12;                              //linear distance of the robot
+
+  setPoint_turn = (double)enc1;                                                    //encoder 2 should go to encoder 1 but negative, making the robot turn right or left
+  input_turn = (double)enc2;                                                       //enc 2 is the input
+  output_turn = computePI(input_turn);                                                   //call PI controller and set value to output from enc 2 value
+  delay(100);
+
+  int pwm_l = 0; //pwm values initialized
+  int pwm_r = 0;
+
+  //if (abs(output) > v_max) output = (v_max)*abs(output)/output;
+  //tested code
+  pwm_l = -(double)pwm_max * (double)output_turn / (double)v_max;                      //converts M1 and M2 encoders into the pwm values from the output
+  pwm_r = -(double)pwm_max * (double)output_turn / (double)v_max;
+
+  //  Serial.print(error);                                                      //prints out the pwm encoder values, distances, and angle determined
+  //  Serial.print("\t");
+  //  Serial.print(wheelDistance1);
+  //  Serial.print("\t");
+  //  Serial.print(wheelDistance2);
+  //  Serial.print("\t");
+  //  Serial.print(angle);
+  //  Serial.print("\t");
+  //  //Serial.print(data);
+  //  Serial.print("\t");
+  //  Serial.println(target);
+
+
+  //  Serial.print("\t");
+  //  Serial.print(pwm_r);
+  //  Serial.print("\t");
+  //  Serial.print(pwm_l);
+  //  Serial.print("\t");
+  //set the motor to the pwm values indicated by the M1 and M2
+  md.setM1Speed(pwm_r);
+  md.setM2Speed(pwm_l);
+  if ((wheelDistance1 > angle) && (wheelDistance2 > angle)) {
+    if (deg_turn <= 0) { //turn the robot to the left
+      md.setM1Speed(100);
+      md.setM2Speed(100 + output_turn);
+      Serial.print(enc1);
+      Serial.print("\t");
+      Serial.print(wheelDistance1);
+      Serial.print("\t");
+      Serial.println(wheelDistance2);
+    }
+  } 
+  else if (wheelDistance1 < angle) { //stop the robot on left condition
+    if (deg_turn <= 0) {
+      Serial.println("Im stopping");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      turnFlag = 0;
+    }
+  }
+  if (wheelDistance1 < angle) { //turn the robot to the right
+    if (deg_turn > 0) {
+      md.setM1Speed(-100);
+      md.setM2Speed(-100 + output_turn);
+      Serial.print(enc1);
+      Serial.print("\t");
+      Serial.print(wheelDistance1);
+      Serial.print("\t");
+      Serial.println(angle);
+    }
+
+  }  
+  else if (wheelDistance1 > angle) { //stop the robot on right condition
+    if (deg_turn > 0) {
+      Serial.println("Im stopping");
+      md.setM1Speed(0);
+      md.setM2Speed(0);
+      turnFlag = 0;
+    }
+  }
+}
+
+
+void PI_READ(int byteCount) {
+  int i = 0;
+  int address;
+  while (Wire.available()) {
+    if (i > 0) {
+      data[i - 1] = Wire.read();
+    }
+    else {
+      address = Wire.read();
+    }
+    i++;
+  }
+  i--;
+  //  Serial.print("data received: ");
+  //  for (int j=0;j<i;j++) {
+  //   Serial.print(data[j]);
+  //    Serial.print("\t");
+  //  }
+  //  Serial.println("");
+  RECEIVED_DATA = 1;
+
+}
+
+
+//this function takes in the counts from the encoder 
+double computePI(double input){
+  currentTime = millis();
+  elapsedTime = (double)(currentTime - previousTime)/1000;
+  error = setPoint - input; //difference between encoder 1 and 2
+  totalError += error * elapsedTime;
+
+  double out = kp*error + ki*totalError;
+
+  //resetting values to run again if necessary
+  lastError = error;
+  previousTime = currentTime;
+  return out;
+}
