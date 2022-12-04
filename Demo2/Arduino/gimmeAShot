@@ -50,6 +50,13 @@ double lastError;
 double input, output, setPoint;
 double totalError, rateError;
 
+//the following variables are just for the turn function
+double errorT;
+double lastErrorT;
+unsigned long currentTimeT, previousTimeT;
+double elapsedTimeT;
+double totalErrorT;
+
 bool driveFlag =  0;
 bool turnFlag = 0;
 bool RECEIVED_DATA = 0; //only true if aruco marker is detected
@@ -70,7 +77,6 @@ int nextState = 0;
 #define MOVEP2 4
 #define DONE 5
 
-//the following variables are just for the turn function
 
 void setup() {
   Serial.begin(115200);
@@ -205,14 +211,14 @@ void drive(double targetDist) {
 }
 
 double computePI_Turn(double input_turn) { //PI controller that sets M2 to -M1
-  currentTime = millis();
-  elapsedTime = (double)(currentTime - previousTime) / 1000; //elapsed time created for the integral term
-  error = (-setPoint_turn) - input_turn;                               //error that is sent to the proportional controller
-  totalError += error * elapsedTime; //integral accumulation
-  double out = kp * error + ki * totalError;                 //implements kp and ki terms for PI equation
-  lastError = error;                                         //reset the time and error so each duration is measured
-  previousTime = currentTime;
-  return out;
+  currentTimeT = millis();
+  elapsedTimeT = (double)(currentTimeT - previousTimeT) / 1000; //elapsed time created for the integral term
+  errorT = (-setPoint_turn) - input_turn;                               //error that is sent to the proportional controller
+  totalErrorT += errorT * elapsedTimeT; //integral accumulation
+  double outT = kp * errorT + ki * totalErrorT;                 //implements kp and ki terms for PI equation
+  lastErrorT = errorT;                                         //reset the time and error so each duration is measured
+  previousTimeT = currentTimeT;
+  return outT;
 }
 
 void turn(double deg_turn) {
