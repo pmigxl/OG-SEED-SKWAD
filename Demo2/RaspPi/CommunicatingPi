@@ -1,5 +1,11 @@
-#Faster Camera, I2C in progress
+# Computer Vision Code
+# To Use: Run code and show robot marker
+# Outputs:
+# detect variable, either 0 or 1 depeneding on whether or not a marker is in the field of view 
+# angle variable, outputs angle to marker from the center of the camera in degrees
+# dist variable, outputs the distance to the marker from the center of the camera in feet
 
+#Import Libraries
 from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
@@ -16,8 +22,13 @@ import pickle
 import os
 import pygame
 
-
+# Define variables 
 counter = 0
+fudge = 27.00
+x = 0
+y = 0
+FOV = 53.76
+
 bus = smbus.SMBus(1)
 address = 0x2a
 slave_address = 0x20
@@ -37,12 +48,12 @@ def readBlock(length):
 
 
 
-# Define the thread that will continuously pull frames from the camera
-class CameraBufferCleanerThread(threading.Thread):
+# Buffer thread to improve camera communication speed
+class CameraBuffer(threading.Thread):
     def __init__(self, camera, name='camera-buffer-cleaner-thread'):
         self.camera = camera
         self.last_frame = None
-        super(CameraBufferCleanerThread, self).__init__(name=name)
+        super(CameraBuffer, self).__init__(name=name)
         self.start()
 
     def run(self):
@@ -75,7 +86,7 @@ def writeNumber(comDetect, comAngle, comDist):
 
 
 
-
+#Define various camera settings 
 camera = cv2.VideoCapture(0)
 camera.set(cv2.CAP_PROP_BUFFERSIZE, 2);
 camera.set(cv2.CAP_PROP_FPS, 20);
@@ -83,19 +94,18 @@ camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25);
 camera.set(cv2.CAP_PROP_EXPOSURE, 30);
 
 
-markerSize = 27.00
-# Start the cleaning thread
-cam_cleaner = CameraBufferCleanerThread(camera)
+
+# Start the camera buffer 
+cam_cleaner = CameraBuffer(camera)
 
 
-# Takes in the calibration file from separate calibration program
+# Read in calibration file and assign important varaibles 
 with open ('camera_cal1.npy', 'rb') as f:
-    cameraMatrix = np.load(f)
-    distCoeffs = np.load(f)
+    matx = np.load(f)
+    dist = np.load(f)
 
 
-mtx = cameraMatrix
-dist = distCoeffs
+
 flag = False
 
 
@@ -105,21 +115,29 @@ while True:
         img = cv2.cvtColor(cam_cleaner.last_frame, cv2.COLOR_BGR2GRAY)
        
         imgSize = img.shape
-        xCoord = (imgSize[1] / 2) +1
-        yCoord = (imgSize[0] / 2) +1
+        x = (imgSize[1] / 2) + 1
+        y = (imgSize[0] / 2) + 1
+        
         # Import the dictonary of markers, define the parameters
         arucoDict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
         arucoParams = cv2.aruco.DetectorParameters_create()
-        (corners, ids, rejected) = cv2.aruco.detectMarkers(img, arucoDict, parameters=arucoParams)
-        # See if
+        (corners, ids, rejected) = cv2.aruco.detectMarkers(img, arucoDict, matx, dist)
+         # Enter if a marker is detected 
         if len(corners)> 0:
+            # Set detect state to "true" and increase coutner
             detect = 1
             counter += 1
+            
+            # Collapses id array and returns it in one dimension
             ids = ids.flatten()
-            rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, markerSize, mtx, dist)
+            
+            # Function to estimate real world positons / vectors
+            rvec, tvec, _ = aruco.estimatePoseSingleMarkers(corners, fudge, matx, dist)
            
+            # For each marker this loop finds the corners, draws a bounding box, finds the center of the marker and calculates angle and distance 
             for (markerCorner, markerID) in zip(corners, ids):
-               
+            
+                # Define corners 
                 corners = markerCorner.reshape((4,2))
                 (topLeft, topRight, bottomRight, bottomLeft) = corners
                 topRight = (int(topRight[0]), int(topRight[1]))
@@ -132,39 +150,39 @@ while True:
                 cv2.line(img, bottomRight, bottomLeft, (0, 255, 0), 2)
                 cv2.line(img, bottomLeft, topLeft, (0, 255, 0), 2)
                
-                cX = int((topLeft[0] + bottomRight[0]) / 2.0)
-                cY = int((topLeft[1] + bottomRight[1]) / 2.0)
-                cv2.circle(img, (cX, cY), 4, (0, 0, 255), -1)
+                # Calculate center of marker 
+                centerX = int((topLeft[0] + bottomRight[0]) / 2.0)
+                centerY = int((topLeft[1] + bottomRight[1]) / 2.0)
+                cv2.circle(img, (centerX, centerY), 4, (0, 0, 255), -1)
                
-                # Calculate the angle from camera to the object by using the provided formula, 53.76 == FOV of CAMERA
-                actAngle = round( (53.76/2) * ( (xCoord - cX) / xCoord))
-                if actAngle < -3:
-                    actAngle -= 3
-                elif actAngle > 3:
-                    actAngle += 3
-                elif actAngle < -1 and actAngle > -3:
-                    actAngle -= 1
-                elif actAngle > 1 and actAngle < 3:
-                    actAngle += 1
+                # Calculate the angle of the marker from the center of the camera 
+                angle = round( (FOV/2) * ( (x - centerX) / x))
+                
+                # Calibration based on camera testing 
+                if angle < -3:
+                    angle -= 3
+                elif angle > 3:
+                    angle += 3
+                elif angle < -1 and angle > -3:
+                    angle -= 1
+                elif angle > 1 and angle < 3:
+                    angle += 1
                  
-                #Divide by 100 to get ft
+                # Take calculated distance and convert into feet 
                 z = (tvec[0][0][2]/100)
                 y = (tvec[0][0][0]/100)
                      
-                # Calculate the distance using z-vector of tvec and y-vector of tvec to get accurate distance
-                dist = round( math.sqrt(math.pow(z,2) + math.pow(y,2)) , 1) + 0.2 #Add 0.2 to compenstate for cam position on robot
-                #distFromCamToMarker = round( z , 1)
-                # Display the ID's and angle
-                #anglePrint = str(angle) + ' degrees'
-                actPrint = str(actAngle) + ' degrees'
+                # Distance calculation using real world vectors 
+                dist = round( math.sqrt(math.pow(z,2) + math.pow(y,2)) , 1) + 0.2 
+                
+             
+                # Display calculated angle and distance on screen
+                anglePrint = str(angle) + ' degrees'
                 distPrint = str(dist) + ' ft'
-               
-                printt = actPrint + distPrint
-                #print(distPrint)
-                #cv2.putText(img, distPrint, (topLeft[0], topLeft[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 255, 0), 2)
-                #cv2.putText(img, actPrint, (topRight[0], topRight[1] - 15), cv2.FONT_HERSHEY_SIMPLEX,0.5, (25, 255, 0), 2)
+                
+                printt = anglePrint + distPrint
+                
                 cv2.putText(img, printt, (20,460), cv2.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), 2, cv2.LINE_AA)
-                #writeNumber(angle)
                
         # show the output image
             cv2.imshow('Image', img)
