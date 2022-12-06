@@ -220,7 +220,7 @@ void turn(double deg_turn) {
 
 
   long enc2T = -1 * encoderM2.read();
-  double wheelTheta2T = (2.0 * pi * (double)enc2T) / (double)motor_counts;      //reads the encoder of M2
+  double wheelTheta2T = (2.0 * pi * (double)enc2T) / (double)motor_counts * (180 / pi);    //reads the encoder of M2
   double wheelDistance2T = (wheelTheta2T * r) / 12;                              //linear distance of the robot
 
 
@@ -243,48 +243,60 @@ void turn(double deg_turn) {
   //set the motor to the pwm values indicated by the M1 and M2
   //md.setM1Speed(pwm_r);
   //md.setM2Speed(pwm_l);
-  if (abs(angle - piAngle) > 2) {
-    if (abs(angle) > piAngle) {
-      if (deg_turn < 0) { //turn the robot to the left
-        md.setM1Speed(-100);
-        md.setM2Speed(-100);
-        Serial.print(angle);
-        Serial.print("\t");
-        Serial.println(piAngle);
-      }
-    }
+  if (abs(angle - piAngle) > 2){
+    md.setM1Speed(100);
+    md.setM2Speed(100);
+    Serial.print(abs(angle - piAngle));
+    Serial.print("\t");
+    Serial.println(piAngle);
   }
-  else if (abs(angle - piAngle) <= 2) { //stop the robot on left condition
-    Serial.println("check1");
-    if (abs(angle) <= abs(piAngle)) {
-      Serial.println("check2");
-      if (deg_turn <= 0) {
-        Serial.println("Im stopping");
-        md.setM1Speed(0);
-        md.setM2Speed(0);
-        turnFlag = 0;
-      }
-    }
+  else if (abs(angle - piAngle) <= 2) {
+    Serial.println("Im stopping");
+    md.setM1Speed(0);
+    md.setM2Speed(0);
+    turnFlag = 0;
   }
-  if (wheelDistance1T < angle) { //turn the robot to the right
-    if (deg_turn > 0) {
-      md.setM1Speed(-100);
-      md.setM2Speed(-100 + output_turn);
-      //Serial.print(wheelDistance1T);
-      //Serial.print("\t");
-      //Serial.println(angle);
-    }
-  }
-  else if (wheelDistance1T >= angle) { //stop the robot on right condition
-    if (deg_turn > 0) {
-      Serial.println("Im stopping");
-      md.setM1Speed(0);
-      md.setM2Speed(0);
-      turnFlag = 0;
-    }
-  }
+//  if (abs(angle - piAngle) > 2) {
+//  if (abs(angle) > piAngle) {
+//      if (deg_turn < 0) { //turn the robot to the left
+//        md.setM1Speed(100);
+//        md.setM2Speed(100);
+//        Serial.print(angle);
+//        Serial.print("\t");
+//        Serial.println(piAngle);
+//      }
+//    }
+//  }
+//  else if (abs(angle - piAngle) <= 2) { //stop the robot on left condition
+//  Serial.println("check1");
+//    if (abs(angle) <= abs(piAngle)) {
+//      Serial.println("check2");
+//      if (deg_turn <= 0) {
+//        Serial.println("Im stopping");
+//        md.setM1Speed(0);
+//        md.setM2Speed(0);
+//        turnFlag = 0;
+//      }
+//    }
+//  }
+//  if (wheelDistance1T < angle) { //turn the robot to the right
+//  if (deg_turn > 0) {
+//      md.setM1Speed(-100);
+//      md.setM2Speed(-100 + output_turn);
+//      //Serial.print(wheelDistance1T);
+//      //Serial.print("\t");
+//      //Serial.println(angle);
+//    }
+//  }
+//  else if (wheelDistance1T >= angle) { //stop the robot on right condition
+//  if (deg_turn > 0) {
+//      Serial.println("Im stopping");
+//      md.setM1Speed(0);
+//      md.setM2Speed(0);
+//      turnFlag = 0;
+//    }
+//  }
 }
-//end of turning shit
 
 void PI_READ(int byteCount) {
   int i = 0;
