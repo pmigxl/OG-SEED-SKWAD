@@ -189,7 +189,7 @@ while True:
        
             i=0
             var1=int(10*dist)
-            var2 = actAngle + 30
+            var2 = angle + 30
             bytevar1 = var1.to_bytes(1, 'big')
             print(bytevar1)
             bytevar2 = var2.to_bytes(1, 'big')
